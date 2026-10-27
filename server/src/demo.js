@@ -11,6 +11,6 @@ await server.start();
 
 process.env.DATABASE_URL = `postgres://postgres:postgres@127.0.0.1:${port}/postgres`;
 process.env.PG_POOL_MAX = '1'; // PGlite обслуживает одно соединение за раз
-process.env.CORS_ORIGIN ||= 'http://localhost:8081';
+process.env.CORS_ORIGIN ||= '*'; // любой адрес веб-версии: localhost, телефон в той же сети
 console.log('Демо-режим: встроенная база данных в папке server/demo-data');
 await import('./index.js');

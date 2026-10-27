@@ -69,7 +69,8 @@ export function createApp(ctx) {
   if (config.corsOrigin) {
     app.use('/api', (req, res, next) => {
       res.set({
-        'Access-Control-Allow-Origin': config.corsOrigin,
+        'Access-Control-Allow-Origin': config.corsOrigin === '*' ? (req.get('origin') || '*') : config.corsOrigin,
+        Vary: 'Origin',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE',
       });
