@@ -7,7 +7,7 @@ import path from 'node:path';
 pg.types.setTypeParser(1082, (value) => value);
 
 export function createPool(databaseUrl) {
-  return new pg.Pool({ connectionString: databaseUrl, max: 10 });
+  return new pg.Pool({ connectionString: databaseUrl, max: Number(process.env.PG_POOL_MAX || 10) });
 }
 
 export async function migrate(pool) {
