@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "ToyTime",
+    "slug": "toytime",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "kz.toytime.app",
+      "infoPlist": {
+        "NSContactsUsageDescription": "ToyTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F5C3A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "kz.toytime.app",
+      "permissions": [
+        "android.permission.READ_CONTACTS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "ToyTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "scheme": "toytime",
+    "extra": {
+      "apiUrl": "http://localhost:3000"
+    }
+  }
+}

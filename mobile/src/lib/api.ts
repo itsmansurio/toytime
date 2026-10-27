@@ -1,0 +1,92 @@
+import Constants from 'expo-constants';
+
+export const API_URL: string =
+  process.env.EXPO_PUBLIC_API_URL || (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl || 'http://localhost:3000';
+
+export type Rsvp = 'pending' | 'yes' | 'no';
+export type PaymentStatus = 'unpaid' | 'pending' | 'paid';
+
+export interface EventStats { total: number; yes: number; no: number; pending: number }
+export interface EventItem {
+  id: string;
+  title: string;
+  eventDate: string;
+  eventTime: string;
+  startsAt: string;
+  address: string;
+  invitationText: string;
+  firstReminderDays: 7 | 10;
+  paymentStatus: PaymentStatus;
+  invitesSentAt: string | null;
+  stats?: EventStats;
+  messages?: { kind: string; status: string; n: number }[];
+}
+export interface Guest {
+  id: string;
+  name: string;
+  phone: string;
+  rsvp: Rsvp;
+  respondedAt: string | null;
+  messageStatus: string | null;
+}
+export interface AppConfig {
+  priceKzt: number;
+  privacyUrl: string;
+  testMode: { whatsapp: boolean; payments: boolean };
+}
+export interface NotificationItem { id: number; eventId: string | null; text: string; createdAt: string; read: boolean }
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+let token: string | null = null;
+let onUnauthorized: (() => void) | null = null;
+
+export function setToken(value: string | null) { token = value; }
+export function setUnauthorizedHandler(fn: () => void) { onUnauthorized = fn; }
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(API_URL + path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(0, 'Нет связи с сервером. Проверьте интернет.');
+  }
+  const json = await res.json().catch(() => ({}));
+  if (res.status === 401 && token) onUnauthorized?.();
+  if (!res.ok) throw new ApiError(res.status, json.error || `Ошибка ${res.status}`);
+  return json as T;
+}
+
+export const api = {
+  config: () => request<AppConfig>('GET', '/api/config'),
+  createSession: (name?: string) => request<{ token: string }>('POST', '/api/session', { consent: true, name }),
+  updateMe: (data: { name?: string; pushToken?: string | null }) => request('PATCH', '/api/me', data),
+  deleteMe: () => request('DELETE', '/api/me'),
+  events: () => request<EventItem[]>('GET', '/api/events'),
+  event: (id: string) => request<EventItem>('GET', `/api/events/${id}`),
+  createEvent: (data: {
+    title: string; event_date: string; event_time: string; address: string; invitation_text: string; first_reminder_days: number;
+  }) => request<EventItem>('POST', '/api/events', data),
+  deleteEvent: (id: string) => request('DELETE', `/api/events/${id}`),
+  guests: (id: string) => request<Guest[]>('GET', `/api/events/${id}/guests`),
+  addGuests: (id: string, guests: { name: string; phone: string }[]) =>
+    request<{ added: Guest[]; rejected: { name: string; phone: string; reason: string }[] }>('POST', `/api/events/${id}/guests`, { guests }),
+  deleteGuest: (id: string, guestId: string) => request('DELETE', `/api/events/${id}/guests/${guestId}`),
+  createPayment: (id: string) =>
+    request<{ paymentId: string; checkoutUrl: string; amountKzt: number; testMode: boolean }>('POST', `/api/events/${id}/payments`),
+  payment: (id: string) => request<{ paymentStatus: PaymentStatus; amountKzt: number; testMode: boolean }>('GET', `/api/events/${id}/payment`),
+  send: (id: string) => request<{ queued: number; testMode: boolean }>('POST', `/api/events/${id}/send`),
+  notifications: () => request<NotificationItem[]>('GET', '/api/notifications'),
+  markNotificationsRead: () => request('POST', '/api/notifications/read'),
+};
