@@ -456,8 +456,26 @@ export function createApp(ctx) {
   // Веб-версия приложения (собирается из mobile/ в server/public) для показа по ссылке.
   const webDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
   if (fs.existsSync(path.join(webDir, 'index.html'))) {
+    // Теги, чтобы веб-версию можно было добавить на экран «Домой» как приложение (iPhone и Android).
+    const pwaTags = [
+      '<link rel="manifest" href="/manifest.webmanifest">',
+      '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
+      '<meta name="apple-mobile-web-app-capable" content="yes">',
+      '<meta name="mobile-web-app-capable" content="yes">',
+      '<meta name="apple-mobile-web-app-title" content="ToyTime">',
+      '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
+      '<meta name="theme-color" content="#0F5C3A">',
+    ].join('');
+    const indexHtml = fs.readFileSync(path.join(webDir, 'index.html'), 'utf8').replace('</head>', `${pwaTags}</head>`);
+    const staticDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'static');
+    app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').json({
+      name: 'ToyTime', short_name: 'ToyTime', start_url: '/', display: 'standalone',
+      background_color: '#F4F7F5', theme_color: '#0F5C3A', lang: 'ru',
+      icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+    }));
+    app.use(express.static(staticDir, { index: false }));
     app.use(express.static(webDir, { index: false }));
-    app.get(/^\/(?!api\/|webhooks\/|admin\/|test\/|r\/).*/, (req, res) => res.sendFile(path.join(webDir, 'index.html')));
+    app.get(/^\/(?!api\/|webhooks\/|admin\/|test\/|r\/).*/, (req, res) => res.type('html').send(indexHtml));
   }
 
   app.use((req, res) => res.status(404).json({ error: 'Не найдено' }));

@@ -27,7 +27,10 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "ToyTime",
+      "shortName": "ToyTime",
+      "themeColor": "#0F5C3A"
     },
     "plugins": [
       "expo-router",
@@ -45,6 +48,11 @@
     "scheme": "toytime",
     "extra": {
       "apiUrl": "http://localhost:3000"
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
     }
   }
 }
