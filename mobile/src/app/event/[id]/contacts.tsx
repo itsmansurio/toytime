@@ -96,7 +96,7 @@ export default function ContactsPicker() {
           <ErrorText>{error}</ErrorText>
           {!denied ? <Button title="Разрешить" icon="checkmark" onPress={allow} /> : null}
           <Button title={denied ? 'Добавить вручную' : 'Позже'} variant={denied ? 'primary' : 'outline'} style={{ marginTop: 10 }}
-            onPress={() => router.replace(`/event/${id}/manual`)} />
+            onPress={() => router.back()} />
         </View>
       </View>
     );

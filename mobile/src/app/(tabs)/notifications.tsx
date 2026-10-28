@@ -4,7 +4,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { api, type NotificationItem } from '../../lib/api';
 import { useRefresh } from '../../lib/useRefresh';
 import { colors, radius } from '../../lib/theme';
-import { EmptyState, ErrorText, IconTile, T, type IconName } from '../../components/ui';
+import { EmptyState, ErrorText, HeaderRow, IconTile, T, type IconName } from '../../components/ui';
+import { useCurrentEvent } from '../../lib/current';
 import { TopHeader } from '../../components/TopHeader';
 
 function kind(text: string): { icon: IconName; color: string; bg: string } {
@@ -22,10 +23,10 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 }
 
-function Item({ item }: { item: NotificationItem }) {
+function Item({ item, onOpen }: { item: NotificationItem; onOpen: (eventId: string) => void }) {
   const k = kind(item.text);
   return (
-    <Pressable onPress={() => item.eventId && router.push(`/event/${item.eventId}`)} style={styles.item}>
+    <Pressable onPress={() => item.eventId && onOpen(item.eventId)} style={styles.item}>
       <IconTile name={k.icon} color={k.color} bg={k.bg} size={40} />
       <View style={{ flex: 1 }}>
         <T weight={item.read ? 'medium' : 'semibold'} size={15}>{item.text}</T>
@@ -38,17 +39,18 @@ function Item({ item }: { item: NotificationItem }) {
 
 export default function Notifications() {
   const { data, error, loading } = useRefresh(api.notifications);
+  const { setCurrentId } = useCurrentEvent(60000);
   useFocusEffect(useCallback(() => () => { api.markNotificationsRead().catch(() => {}); }, []));
   return (
     <FlatList
       contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
       data={data ?? []}
       keyExtractor={(n) => String(n.id)}
-      ListHeaderComponent={<><TopHeader title="Уведомления" subtitle="Ответы гостей, оплата и статусы рассылки." /><View style={{ paddingHorizontal: 16, paddingTop: 16 }}><ErrorText>{error}</ErrorText></View></>}
+      ListHeaderComponent={<><TopHeader title="Уведомления" subtitle="Ответы гостей, оплата и статусы рассылки." /><View style={{ paddingHorizontal: 16, paddingTop: 16 }}><HeaderRow onBack={() => router.navigate('/')} /><ErrorText>{error}</ErrorText></View></>}
       ListEmptyComponent={loading ? undefined : (
         <EmptyState icon="notifications-outline" title="Пока тихо" text="Здесь появятся ответы гостей, подтверждения оплаты и статусы рассылки." />
       )}
-      renderItem={({ item }) => <View style={{ paddingHorizontal: 16 }}><Item item={item} /></View>}
+      renderItem={({ item }) => <View style={{ paddingHorizontal: 16 }}><Item item={item} onOpen={(eventId) => { setCurrentId(eventId); router.navigate('/guests'); }} /></View>}
     />
   );
 }

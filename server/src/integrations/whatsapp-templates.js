@@ -8,8 +8,8 @@ export const TEMPLATES = {
     category: 'UTILITY',
     language: 'ru',
     body:
-      'Ассаламу алейкум, {{1}}!\n\nПриглашаем вас на мероприятие «{{2}}».\n\n' +
-      'Дата: {{3}}\nВремя: {{4}}\nМесто: {{5}}\n\n{{6}}\n\n' +
+      'Ассаламу алейкум, {{1}}!\n\n{{2}} приглашает вас на мероприятие «{{3}}».\n\n' +
+      '📅 Дата: {{4}}\n🕒 Время: {{5}}\n📍 Место: {{6}}\n\n{{7}}\n\n' +
       'Пожалуйста, ответьте по кнопке ниже, придёте ли вы. Чтобы не получать сообщения, напишите СТОП.',
     button: { type: 'URL', text: 'Ответить', url: '{PUBLIC_URL}/r/{{1}}' },
   },
@@ -30,12 +30,14 @@ function param(value, max = 300) {
 
 export function buildTemplateMessage(kind, { guest, event, token }) {
   const template = kind === 'invite' ? 'toytime_invite' : 'toytime_reminder';
-  const common = [guest.name, event.title, formatDateRu(event.event_date), event.event_time, event.address];
-  const bodyParams = kind === 'invite' ? [...common, event.invitation_text] : common;
+  const common = [event.title, formatDateRu(event.event_date), event.event_time, event.address];
+  const bodyParams = kind === 'invite'
+    ? [guest.name, event.host_name || 'Организатор праздника', ...common, event.invitation_text]
+    : [guest.name, ...common];
   return {
     template,
     language: TEMPLATES[template].language,
-    bodyParams: bodyParams.map((v, i) => param(v, i === 5 ? 700 : 300)),
+    bodyParams: bodyParams.map((v, i) => param(v, kind === 'invite' && i === 6 ? 700 : 300)),
     buttonUrlSuffix: token,
   };
 }

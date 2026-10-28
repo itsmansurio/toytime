@@ -105,7 +105,7 @@ export function rsvpPage({ guest, event, token, optedOut, flash }) {
     : '';
 
   return layout(event.title, `
-    ${hero({ tag: 'ПРИГЛАШЕНИЕ', kicker: 'Вас приглашают на праздник', title: event.title, sub: `${formatDateRu(event.event_date)} · ${event.event_time}` })}
+    ${hero({ tag: 'ПРИГЛАШЕНИЕ', kicker: event.host_name ? `${event.host_name} приглашает вас` : 'Вас приглашают на праздник', title: event.title, sub: `${formatDateRu(event.event_date)} · ${event.event_time}` })}
 
     ${flash ? `<div class="banner">${h(flash)}</div>` : ''}
 

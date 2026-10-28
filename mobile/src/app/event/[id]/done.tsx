@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { api } from '../../../lib/api';
 import { useRefresh } from '../../../lib/useRefresh';
 import { colors, radius } from '../../../lib/theme';
@@ -9,8 +10,8 @@ import { useSession } from '../../../lib/session';
 import { Button, Ionicons, T, TestBanner } from '../../../components/ui';
 
 const CONFETTI = [
-  { top: 20, left: 40, c: colors.gold, r: 20 }, { top: 60, left: 290, c: colors.green, r: -30 }, { top: 130, left: 20, c: '#E07A5F', r: 45 },
-  { top: 10, left: 220, c: '#E07A5F', r: 10 }, { top: 150, left: 300, c: colors.gold, r: -15 }, { top: 90, left: 90, c: colors.greenMid, r: 60 },
+  { top: 20, left: 40, c: '#B8D65A', r: 20 }, { top: 60, left: 290, c: colors.green, r: -30 }, { top: 130, left: 20, c: '#E07A5F', r: 45 },
+  { top: 10, left: 220, c: '#E07A5F', r: 10 }, { top: 150, left: 300, c: '#B8D65A', r: -15 }, { top: 90, left: 90, c: colors.greenMid, r: 60 },
 ];
 
 export default function Done() {
@@ -21,6 +22,7 @@ export default function Done() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <StatusBar style="dark" />
       <ScrollView contentContainerStyle={{ padding: 24 }}>
         <View style={styles.hero}>
           {CONFETTI.map((c, i) => (
@@ -45,7 +47,7 @@ export default function Done() {
             ))}
           </View>
         ) : null}
-        <Button title="Готово" icon="checkmark" onPress={() => router.replace(`/event/${id}`)} style={{ marginTop: 16 }} />
+        <Button title="Готово" icon="checkmark" onPress={() => router.replace('/')} style={{ marginTop: 16 }} />
       </ScrollView>
     </SafeAreaView>
   );

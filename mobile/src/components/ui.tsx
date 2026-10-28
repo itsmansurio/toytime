@@ -178,3 +178,74 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
   rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
 });
+
+// ---------- Блоки из макета заказчика ----------
+
+export function HeaderRow({ onBack, backLabel = 'Назад', right }: { onBack: () => void; backLabel?: string; right?: string }) {
+  return (
+    <View style={mock.headerRow}>
+      <Pressable onPress={onBack} hitSlop={8} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <Ionicons name="arrow-back" size={17} color={colors.green} />
+        <T weight="extrabold" size={15} color={colors.green}>{backLabel}</T>
+      </Pressable>
+      {right ? <T size={12} color={colors.muted}>{right}</T> : null}
+    </View>
+  );
+}
+
+export function Notice({ children, icon = 'information-circle-outline' }: { children: ReactNode; icon?: IconName }) {
+  return (
+    <View style={mock.notice}>
+      <Ionicons name={icon} size={16} color="#53663A" />
+      <T size={12} color="#53663A" style={{ flex: 1 }}>{children}</T>
+    </View>
+  );
+}
+
+export function Divider() {
+  return <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 14 }} />;
+}
+
+export function Checkbox({ checked }: { checked: boolean }) {
+  return (
+    <View style={[mock.checkbox, checked && mock.checkboxOn]}>
+      {checked ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+    </View>
+  );
+}
+
+export function CheckLine({ checked, onPress, children }: { checked: boolean; onPress: () => void; children: ReactNode }) {
+  return (
+    <Pressable onPress={onPress} style={mock.checkLine} accessibilityRole="checkbox" accessibilityState={{ checked }}>
+      <Checkbox checked={checked} />
+      <View style={{ flex: 1 }}>{typeof children === 'string' ? <T size={13}>{children}</T> : children}</View>
+    </Pressable>
+  );
+}
+
+export function Stats({ items }: { items: [number, string][] }) {
+  return (
+    <View style={mock.stats}>
+      {items.map(([value, label]) => (
+        <View key={label} style={mock.stat}>
+          <T weight="extrabold" size={22} style={{ letterSpacing: -0.5 }}>{value}</T>
+          <T size={11} color={colors.muted}>{label}</T>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export function Muted({ children, style }: { children: ReactNode; style?: TextStyle }) {
+  return <T size={12} color={colors.muted} style={[{ lineHeight: 18 }, style]}>{children}</T>;
+}
+
+const mock = StyleSheet.create({
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingVertical: 5 },
+  notice: { flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: colors.goldLight, borderRadius: 14, padding: 12, marginVertical: 12 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: '#A9B5AD', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  checkboxOn: { backgroundColor: colors.green, borderColor: colors.green },
+  checkLine: { flexDirection: 'row', alignItems: 'center', gap: 9, marginVertical: 7 },
+  stats: { flexDirection: 'row', gap: 8, marginTop: 16 },
+  stat: { flex: 1, backgroundColor: colors.bg, borderRadius: radius.md, paddingVertical: 11, paddingHorizontal: 9 },
+});

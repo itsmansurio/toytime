@@ -358,3 +358,52 @@ test('страница гостя: календарь .ics и оформлени
   assert.match(ics.text, /SUMMARY:Свадебный той/);
   assert.match(ics.text, /DTSTART:\d{8}T140000Z/);
 });
+
+test('макет заказчика: подпись хозяина, выбор получателей, ручной статус, выключение напоминаний', async () => {
+  const token = await newOrganizer(env.api);
+  const event = await newEvent(env.api, token, { host_name: 'Семья Ерлановых', first_reminder_days: 10 });
+  assert.equal(event.hostName, 'Семья Ерлановых');
+  assert.equal(event.remindersEnabled, true);
+  await env.api.post(`/api/events/${event.id}/guests`).set(auth(token)).send({ guests: [
+    { name: 'Данияр', phone: '+77051111111' }, { name: 'Алия', phone: '+77052222222' }, { name: 'Айгерим', phone: '+77053333333' },
+  ] });
+  const byName = Object.fromEntries((await env.api.get(`/api/events/${event.id}/guests`).set(auth(token))).body.map((g) => [g.name, g]));
+  assert.equal(byName['Данияр'].selected, true, 'новые гости выбраны по умолчанию');
+
+  // Айгерим не выбрана — приглашение ей не уходит.
+  await env.api.patch(`/api/events/${event.id}/guests/${byName['Айгерим'].id}`).set(auth(token)).send({ selected: false });
+  // Алия ответила организатору по телефону — он ставит статус вручную.
+  const manual = await env.api.patch(`/api/events/${event.id}/guests/${byName['Алия'].id}`).set(auth(token)).send({ rsvp: 'yes' });
+  assert.equal(manual.body.rsvp, 'yes');
+  assert.equal((await env.api.patch(`/api/events/${event.id}/guests/${byName['Алия'].id}`).set(auth(token)).send({ rsvp: 'maybe' })).status, 400);
+  assert.equal((await stats(token, event.id)).yes, 1);
+
+  // Снять выбор со всех — отправлять некому.
+  await env.api.post(`/api/events/${event.id}/guests/select`).set(auth(token)).send({ selected: false });
+  await payEvent(env.api, token, event.id);
+  assert.equal((await env.api.post(`/api/events/${event.id}/send`).set(auth(token))).status, 400);
+  await env.api.post(`/api/events/${event.id}/guests/select`).set(auth(token)).send({ selected: true });
+  await env.api.patch(`/api/events/${event.id}/guests/${byName['Айгерим'].id}`).set(auth(token)).send({ selected: false });
+
+  const before = env.ctx.whatsapp.outbox.length;
+  const sent = await env.api.post(`/api/events/${event.id}/send`).set(auth(token));
+  assert.equal(sent.body.queued, 2);
+  while (await env.ctx.messaging.processQueue(500));
+  const out = env.ctx.whatsapp.outbox.slice(before).filter((m) => m.to.startsWith('+7705'));
+  assert.deepEqual(out.map((m) => m.to).sort(), ['+77051111111', '+77052222222']);
+  assert.match(out[0].preview, /Семья Ерлановых приглашает вас/);
+
+  // Ссылка на страницу гостя для предпросмотра.
+  const link = await env.api.get(`/api/events/${event.id}/guests/${byName['Данияр'].id}/link`).set(auth(token));
+  assert.match(link.body.url, /^http:\/\/test\.local\/r\//);
+  const page = await env.api.get(new URL(link.body.url).pathname);
+  assert.match(page.text, /Семья Ерлановых приглашает вас/);
+
+  // Напоминания выключены — не создаются, даже когда наступил срок.
+  await env.api.patch(`/api/events/${event.id}`).set(auth(token)).send({ reminders_enabled: false });
+  await shiftToBeforeStart(event.id, 9 * DAY);
+  assert.equal(await env.ctx.messaging.scheduleReminders(), 0);
+  await env.api.patch(`/api/events/${event.id}`).set(auth(token)).send({ reminders_enabled: true });
+  await shiftToBeforeStart(event.id, 9 * DAY); // PATCH пересчитывает дату из полей мероприятия
+  assert.equal(await env.ctx.messaging.scheduleReminders(), 1, 'только Данияр: Алия ответила, Айгерим не приглашена');
+});

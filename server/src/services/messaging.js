@@ -19,11 +19,11 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
   const wa = config.whatsapp;
   const optOutSql = `EXISTS (SELECT 1 FROM opt_outs o WHERE o.phone_hash = encode(hmac('phone:' || g.phone, $SECRET, 'sha256'), 'hex'))`;
 
-  // Ставит приглашения в очередь всем гостям, которым их ещё не ставили.
+  // Ставит приглашения в очередь выбранным гостям, которым их ещё не ставили.
   async function enqueueInvites(eventId) {
     const { rowCount } = await pool.query(
       `INSERT INTO messages (event_id, guest_id, kind, template)
-       SELECT g.event_id, g.id, 'invite', 'toytime_invite' FROM guests g WHERE g.event_id = $1
+       SELECT g.event_id, g.id, 'invite', 'toytime_invite' FROM guests g WHERE g.event_id = $1 AND g.selected
        ON CONFLICT (guest_id, kind) DO NOTHING`,
       [eventId],
     );
@@ -35,7 +35,7 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
   // Если сервер простаивал и наступило несколько сроков, отправится только последнее.
   async function scheduleReminders(now = new Date()) {
     const { rows: events } = await pool.query(
-      `SELECT * FROM events WHERE payment_status = 'paid' AND invites_sent_at IS NOT NULL AND starts_at > $1`,
+      `SELECT * FROM events WHERE payment_status = 'paid' AND invites_sent_at IS NOT NULL AND reminders_enabled AND starts_at > $1`,
       [now],
     );
     let created = 0;
@@ -76,7 +76,7 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
 
   async function sendOne(message) {
     const { rows } = await pool.query(
-      `SELECT g.*, e.title, e.event_date, e.event_time, e.address, e.invitation_text, e.payment_status, e.organizer_id,
+      `SELECT g.*, e.title, e.event_date, e.event_time, e.address, e.invitation_text, e.host_name, e.reminders_enabled, e.payment_status, e.organizer_id,
               ${optOutSql.replace('$SECRET', '$2')} AS opted_out
        FROM guests g JOIN events e ON e.id = g.event_id WHERE g.id = $1`,
       [message.guest_id, config.linkSecret],
@@ -86,6 +86,7 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
     if (row.payment_status !== 'paid') return finish(message.id, { status: 'skipped', last_error: 'Мероприятие не оплачено' });
     if (row.opted_out) return finish(message.id, { status: 'skipped', last_error: 'Гость отказался от сообщений' });
     if (message.kind !== 'invite' && row.rsvp !== 'pending') return finish(message.id, { status: 'skipped', last_error: 'Гость уже ответил' });
+    if (message.kind !== 'invite' && !row.reminders_enabled) return finish(message.id, { status: 'skipped', last_error: 'Напоминания выключены' });
 
     const payload = buildTemplateMessage(message.kind, { guest: row, event: row, token: guestToken(config.linkSecret, row.id) });
     try {

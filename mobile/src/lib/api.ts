@@ -20,10 +20,16 @@ export interface EventItem {
   address: string;
   invitationText: string;
   firstReminderDays: 7 | 10;
+  hostName: string | null;
+  remindersEnabled: boolean;
   paymentStatus: PaymentStatus;
   invitesSentAt: string | null;
   stats?: EventStats;
   messages?: { kind: string; status: string; n: number }[];
+}
+export interface EventInput {
+  title: string; event_date: string; event_time: string; address: string; invitation_text: string;
+  first_reminder_days: number; host_name?: string | null; reminders_enabled?: boolean;
 }
 export interface Guest {
   id: string;
@@ -31,6 +37,8 @@ export interface Guest {
   phone: string;
   rsvp: Rsvp;
   respondedAt: string | null;
+  rsvpSource: 'guest' | 'organizer' | null;
+  selected: boolean;
   messageStatus: string | null;
 }
 export interface AppConfig {
@@ -79,14 +87,17 @@ export const api = {
   deleteMe: () => request('DELETE', '/api/me'),
   events: () => request<EventItem[]>('GET', '/api/events'),
   event: (id: string) => request<EventItem>('GET', `/api/events/${id}`),
-  createEvent: (data: {
-    title: string; event_date: string; event_time: string; address: string; invitation_text: string; first_reminder_days: number;
-  }) => request<EventItem>('POST', '/api/events', data),
+  createEvent: (data: EventInput) => request<EventItem>('POST', '/api/events', data),
+  updateEvent: (id: string, data: Partial<EventInput>) => request<EventItem>('PATCH', `/api/events/${id}`, data),
   deleteEvent: (id: string) => request('DELETE', `/api/events/${id}`),
   guests: (id: string) => request<Guest[]>('GET', `/api/events/${id}/guests`),
   addGuests: (id: string, guests: { name: string; phone: string }[]) =>
     request<{ added: Guest[]; rejected: { name: string; phone: string; reason: string }[] }>('POST', `/api/events/${id}/guests`, { guests }),
   deleteGuest: (id: string, guestId: string) => request('DELETE', `/api/events/${id}/guests/${guestId}`),
+  updateGuest: (id: string, guestId: string, data: { rsvp?: Rsvp; selected?: boolean }) =>
+    request('PATCH', `/api/events/${id}/guests/${guestId}`, data),
+  selectAllGuests: (id: string, selected: boolean) => request('POST', `/api/events/${id}/guests/select`, { selected }),
+  guestLink: (id: string, guestId: string) => request<{ url: string }>('GET', `/api/events/${id}/guests/${guestId}/link`),
   createPayment: (id: string) =>
     request<{ paymentId: string; checkoutUrl: string; amountKzt: number; testMode: boolean }>('POST', `/api/events/${id}/payments`),
   payment: (id: string) => request<{ paymentStatus: PaymentStatus; amountKzt: number; testMode: boolean }>('GET', `/api/events/${id}/payment`),

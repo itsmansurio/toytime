@@ -9,7 +9,7 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
   const input = { border: 'none', outline: 'none', fontSize: 14, fontFamily: font.semibold, color: colors.text, background: 'transparent', flex: 1, minWidth: 0 };
   return (
     <View style={styles.row}>
-      <View style={[styles.box, { flex: 1.3 }]}>
+      <View style={[styles.box, { flex: 1 }]}>
         <Ionicons name="calendar-outline" size={19} color={colors.green} />
         {createElement('input', {
           lang: 'ru', type: 'date', value: toIsoDate(value), style: input, min: toIsoDate(new Date()),
@@ -19,7 +19,7 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
           },
         })}
       </View>
-      <View style={[styles.box, { flex: 1.1 }]}>
+      <View style={[styles.box, { flex: 1 }]}>
         <Ionicons name="time-outline" size={19} color={colors.green} />
         {createElement('input', {
           lang: 'ru', type: 'time', value: toTime(value), style: input,

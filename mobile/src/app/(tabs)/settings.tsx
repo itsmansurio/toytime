@@ -3,7 +3,8 @@ import { Alert, Linking, Platform, ScrollView, StyleSheet, View } from 'react-na
 import { useSession } from '../../lib/session';
 import { API_URL } from '../../lib/api';
 import { colors, radius } from '../../lib/theme';
-import { ErrorText, IconTile, Row, SectionTitle, T, TestBanner } from '../../components/ui';
+import { router } from 'expo-router';
+import { ErrorText, HeaderRow, IconTile, Row, SectionTitle, T, TestBanner } from '../../components/ui';
 import { TopHeader } from '../../components/TopHeader';
 
 function confirm(title: string, message: string): Promise<boolean> {
@@ -30,6 +31,7 @@ export default function Settings() {
     <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
       <TopHeader title="Настройки" subtitle="Данные, конфиденциальность и поддержка." />
       <View style={{ padding: 16 }}>
+        <HeaderRow onBack={() => router.navigate('/')} />
       {testParts.length ? <TestBanner>Тестовый режим: {testParts.join(', ')}.</TestBanner> : null}
 
       <SectionTitle>Приложение</SectionTitle>

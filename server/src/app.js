@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { HttpError, normalizePhone, parseGuestToken, phoneHash, randomToken, sha256 } from './util.js';
+import { HttpError, guestToken, normalizePhone, parseGuestToken, phoneHash, randomToken, sha256 } from './util.js';
 import { verifyWebhookSignature } from './integrations/whatsapp.js';
 import { verifyPaymentWebhook } from './integrations/payments.js';
 import { calendarFile, notFoundPage, outboxPage, privacyPage, rsvpPage, testCheckoutPage } from './views/pages.js';
@@ -52,6 +52,12 @@ function validateEvent(body, config, { partial = false } = {}) {
     if (!TIME_RE.test(body.event_time ?? '')) throw new HttpError(400, 'Время в формате ЧЧ:ММ');
     out.event_time = body.event_time;
   }
+  if (body.host_name !== undefined) {
+    const value = String(body.host_name ?? '').trim();
+    if (value.length > 80) throw new HttpError(400, 'Имя хозяина длиннее 80 символов');
+    out.host_name = value || null;
+  }
+  if (body.reminders_enabled !== undefined) out.reminders_enabled = Boolean(body.reminders_enabled);
   if (body.first_reminder_days !== undefined) {
     if (![7, 10].includes(Number(body.first_reminder_days))) throw new HttpError(400, 'Первое напоминание: за 7 или 10 дней');
     out.first_reminder_days = Number(body.first_reminder_days);
@@ -159,6 +165,7 @@ export function createApp(ctx) {
     return {
       id: e.id, title: e.title, eventDate: e.event_date, eventTime: e.event_time, startsAt: e.starts_at,
       address: e.address, invitationText: e.invitation_text, firstReminderDays: e.first_reminder_days,
+      hostName: e.host_name, remindersEnabled: e.reminders_enabled,
       paymentStatus: e.payment_status, invitesSentAt: e.invites_sent_at,
       stats: e.guests_total === undefined ? undefined : { total: e.guests_total, yes: e.guests_yes, no: e.guests_no, pending: e.guests_pending },
     };
@@ -174,9 +181,10 @@ export function createApp(ctx) {
     const startsAt = new Date(`${data.event_date}T${data.event_time}:00${config.utcOffset}`);
     if (startsAt <= new Date()) throw new HttpError(400, 'Дата мероприятия должна быть в будущем');
     const { rows } = await pool.query(
-      `INSERT INTO events (organizer_id, title, event_date, event_time, starts_at, address, invitation_text, first_reminder_days)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [req.organizer.id, data.title, data.event_date, data.event_time, startsAt, data.address, data.invitation_text, data.first_reminder_days ?? 7],
+      `INSERT INTO events (organizer_id, title, event_date, event_time, starts_at, address, invitation_text, first_reminder_days, host_name, reminders_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [req.organizer.id, data.title, data.event_date, data.event_time, startsAt, data.address, data.invitation_text, data.first_reminder_days ?? 7,
+        data.host_name ?? null, data.reminders_enabled ?? true],
     );
     res.status(201).json(eventJson(rows[0]));
   }));
@@ -194,9 +202,11 @@ export function createApp(ctx) {
     const data = { ...event, ...validateEvent(req.body, config, { partial: true }) };
     const startsAt = new Date(`${data.event_date}T${data.event_time}:00${config.utcOffset}`);
     const { rows } = await pool.query(
-      `UPDATE events SET title = $2, event_date = $3, event_time = $4, starts_at = $5, address = $6, invitation_text = $7, first_reminder_days = $8
+      `UPDATE events SET title = $2, event_date = $3, event_time = $4, starts_at = $5, address = $6, invitation_text = $7, first_reminder_days = $8,
+         host_name = $9, reminders_enabled = $10
        WHERE id = $1 RETURNING *`,
-      [event.id, data.title, data.event_date, data.event_time, startsAt, data.address, data.invitation_text, data.first_reminder_days],
+      [event.id, data.title, data.event_date, data.event_time, startsAt, data.address, data.invitation_text, data.first_reminder_days,
+        data.host_name, data.reminders_enabled],
     );
     res.json(eventJson(rows[0]));
   }));
@@ -212,12 +222,48 @@ export function createApp(ctx) {
   app.get('/api/events/:id/guests', auth, asyncRoute(async (req, res) => {
     await loadEvent(req);
     const { rows } = await pool.query(
-      `SELECT g.id, g.name, g.phone, g.rsvp, g.responded_at,
+      `SELECT g.id, g.name, g.phone, g.rsvp, g.responded_at, g.selected, g.rsvp_source,
          (SELECT m.status FROM messages m WHERE m.guest_id = g.id ORDER BY m.created_at DESC LIMIT 1) AS last_message_status
        FROM guests g WHERE g.event_id = $1 ORDER BY g.name`,
       [req.params.id],
     );
-    res.json(rows.map((g) => ({ id: g.id, name: g.name, phone: g.phone, rsvp: g.rsvp, respondedAt: g.responded_at, messageStatus: g.last_message_status })));
+    res.json(rows.map((g) => ({
+      id: g.id, name: g.name, phone: g.phone, rsvp: g.rsvp, respondedAt: g.responded_at, rsvpSource: g.rsvp_source,
+      selected: g.selected, messageStatus: g.last_message_status,
+    })));
+  }));
+
+  // Организатор отмечает, кому слать приглашение, и может сам проставить ответ
+  // (например, гость ответил по телефону). Напоминания ответившим не уходят.
+  app.patch('/api/events/:id/guests/:guestId', auth, asyncRoute(async (req, res) => {
+    await loadEvent(req);
+    const { rsvp, selected } = req.body ?? {};
+    if (rsvp !== undefined && !['pending', 'yes', 'no'].includes(rsvp)) throw new HttpError(400, 'Статус: pending, yes или no');
+    const { rows } = await pool.query(
+      `UPDATE guests SET
+         selected = COALESCE($3, selected),
+         rsvp = COALESCE($4, rsvp),
+         responded_at = CASE WHEN $4::text IS NULL THEN responded_at WHEN $4 = 'pending' THEN NULL ELSE now() END,
+         rsvp_source = CASE WHEN $4::text IS NULL THEN rsvp_source WHEN $4 = 'pending' THEN NULL ELSE 'organizer' END
+       WHERE id = $1 AND event_id = $2 RETURNING id, rsvp, selected`,
+      [req.params.guestId, req.params.id, selected === undefined ? null : Boolean(selected), rsvp ?? null],
+    );
+    if (!rows[0]) throw new HttpError(404, 'Гость не найден');
+    res.json(rows[0]);
+  }));
+
+  app.post('/api/events/:id/guests/select', auth, asyncRoute(async (req, res) => {
+    await loadEvent(req);
+    const { rowCount } = await pool.query('UPDATE guests SET selected = $2 WHERE event_id = $1', [req.params.id, Boolean(req.body?.selected)]);
+    res.json({ updated: rowCount });
+  }));
+
+  // Ссылка на страницу гостя, чтобы организатор увидел приглашение глазами гостя.
+  app.get('/api/events/:id/guests/:guestId/link', auth, asyncRoute(async (req, res) => {
+    await loadEvent(req);
+    const { rows } = await pool.query('SELECT id FROM guests WHERE id = $1 AND event_id = $2', [req.params.guestId, req.params.id]);
+    if (!rows[0]) throw new HttpError(404, 'Гость не найден');
+    res.json({ url: `${config.publicUrl}/r/${guestToken(config.linkSecret, rows[0].id)}` });
   }));
 
   // Принимает только выбранных организатором гостей (имя + номер), не всю книгу контактов.
@@ -322,6 +368,8 @@ export function createApp(ctx) {
     const event = await loadEvent(req);
     // Статус оплаты проверяется по базе, которую меняет только подписанный вебхук провайдера.
     if (event.payment_status !== 'paid') throw new HttpError(402, 'Сначала оплатите мероприятие');
+    const { rows: [{ n }] } = await pool.query('SELECT count(*)::int AS n FROM guests WHERE event_id = $1 AND selected', [event.id]);
+    if (!n) throw new HttpError(400, 'Выберите хотя бы одного гостя');
     const queued = await messaging.enqueueInvites(event.id);
     res.json({ queued, testMode: whatsapp.testMode });
   }));
@@ -370,7 +418,7 @@ export function createApp(ctx) {
     const guestId = parseGuestToken(config.linkSecret, token);
     if (!guestId) return null;
     const { rows } = await pool.query(
-      `SELECT g.*, e.title, e.event_date, e.event_time, e.starts_at, e.address, e.invitation_text, e.organizer_id
+      `SELECT g.*, e.title, e.event_date, e.event_time, e.starts_at, e.address, e.invitation_text, e.host_name, e.organizer_id
        FROM guests g JOIN events e ON e.id = g.event_id WHERE g.id = $1`, [guestId]);
     return rows[0] || null;
   }
@@ -398,7 +446,7 @@ export function createApp(ctx) {
     const answer = req.body.answer;
     if (!['yes', 'no'].includes(answer)) throw new HttpError(400, 'Неверный ответ');
     if (row.rsvp !== answer) {
-      await pool.query('UPDATE guests SET rsvp = $2, responded_at = now() WHERE id = $1', [row.id, answer]);
+      await pool.query("UPDATE guests SET rsvp = $2, responded_at = now(), rsvp_source = 'guest' WHERE id = $1", [row.id, answer]);
       // Уже запланированные напоминания этому гостю не уйдут.
       await pool.query(`UPDATE messages SET status = 'skipped', last_error = 'Гость уже ответил', updated_at = now()
                         WHERE guest_id = $1 AND kind <> 'invite' AND status = 'queued'`, [row.id]);
