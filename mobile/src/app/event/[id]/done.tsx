@@ -1,12 +1,17 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../../lib/api';
 import { useRefresh } from '../../../lib/useRefresh';
-import { colors } from '../../../lib/theme';
+import { colors, radius } from '../../../lib/theme';
 import { reminderSchedule, shortDate } from '../../../lib/format';
 import { useSession } from '../../../lib/session';
-import { Button, Card, TestBanner } from '../../../components/ui';
+import { Button, Ionicons, T, TestBanner } from '../../../components/ui';
+
+const CONFETTI = [
+  { top: 20, left: 40, c: colors.gold, r: 20 }, { top: 60, left: 290, c: colors.green, r: -30 }, { top: 130, left: 20, c: '#E07A5F', r: 45 },
+  { top: 10, left: 220, c: '#E07A5F', r: 10 }, { top: 150, left: 300, c: colors.gold, r: -15 }, { top: 90, left: 90, c: colors.greenMid, r: 60 },
+];
 
 export default function Done() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -16,38 +21,42 @@ export default function Done() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'stretch' }}>
-        <Text style={styles.icon}>✅</Text>
-        <Text style={styles.title}>Приглашения отправляются!</Text>
-        <Text style={styles.text}>
-          Мероприятие сохранено. Гости получат приглашение в WhatsApp, а тем, кто не ответит, мы напомним автоматически.
-        </Text>
-        {config?.testMode.whatsapp ? (
-          <TestBanner>Тестовый режим: сообщения не уходят реальным гостям, их можно посмотреть в журнале эмулятора на сервере.</TestBanner>
-        ) : null}
+      <ScrollView contentContainerStyle={{ padding: 24 }}>
+        <View style={styles.hero}>
+          {CONFETTI.map((c, i) => (
+            <View key={i} style={[styles.confetti, { top: c.top, left: c.left, backgroundColor: c.c, transform: [{ rotate: `${c.r}deg` }] }]} />
+          ))}
+          <View style={styles.ring}><View style={styles.check}><Ionicons name="checkmark" size={46} color="#fff" /></View></View>
+        </View>
+        <T weight="extrabold" size={26} style={{ textAlign: 'center' }}>Той создан!</T>
+        <T size={15} color={colors.muted} style={{ textAlign: 'center', marginTop: 8, marginBottom: 20 }}>
+          Приглашения уже отправляются гостям в WhatsApp. Тем, кто не ответит, мы напомним сами.
+        </T>
+        {config?.testMode.whatsapp ? <TestBanner>Тестовый режим: сообщения не уходят реальным гостям.</TestBanner> : null}
         {reminders.length ? (
-          <Card style={{ backgroundColor: colors.greenLight }}>
-            <Text style={styles.cardTitle}>Напоминания тем, кто не ответил:</Text>
+          <View style={styles.box}>
+            <T weight="bold" size={15} style={{ marginBottom: 6 }}>Напоминания тем, кто не ответил</T>
             {reminders.map((r) => (
               <View key={r.kind} style={styles.row}>
-                <Text style={styles.rowText}>🔔 {r.label}</Text>
-                <Text style={styles.rowDate}>{shortDate(r.at)}</Text>
+                <View style={styles.dot}><Ionicons name="notifications" size={13} color={colors.green} /></View>
+                <T weight="medium" size={14} style={{ flex: 1 }}>{r.label}</T>
+                <T weight="semibold" size={13} color={colors.muted}>{shortDate(r.at)}</T>
               </View>
             ))}
-          </Card>
+          </View>
         ) : null}
-        <Button title="Готово" onPress={() => router.replace(`/event/${id}`)} style={{ marginTop: 12 }} />
+        <Button title="Готово" icon="checkmark" onPress={() => router.replace(`/event/${id}`)} style={{ marginTop: 16 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  icon: { fontSize: 72, textAlign: 'center', marginTop: 40 },
-  title: { fontSize: 24, fontWeight: '800', textAlign: 'center', color: colors.text, marginTop: 16 },
-  text: { fontSize: 15, color: colors.muted, textAlign: 'center', marginVertical: 16, lineHeight: 21 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  rowText: { fontSize: 15, color: colors.text },
-  rowDate: { fontSize: 14, color: colors.muted },
+  hero: { height: 190, alignItems: 'center', justifyContent: 'center' },
+  confetti: { position: 'absolute', width: 10, height: 18, borderRadius: 3 },
+  ring: { padding: 12, borderRadius: 70, backgroundColor: colors.greenLight },
+  check: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
+  box: { backgroundColor: colors.greenSoft, borderRadius: radius.lg, padding: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
+  dot: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center' },
 });

@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Contact, ContactField, requestPermissionsAsync } from 'expo-contacts';
 import { api } from '../../../lib/api';
 import { formatPhone, normalizePhone } from '../../../lib/phone';
-import { colors } from '../../../lib/theme';
-import { Button, ErrorText } from '../../../components/ui';
+import { colors, font, radius } from '../../../lib/theme';
+import { Avatar, Button, EmptyState, ErrorText, Ionicons, T } from '../../../components/ui';
 
 interface Candidate { key: string; name: string; phone: string }
 
@@ -80,21 +80,24 @@ export default function ContactsPicker() {
   };
 
   if (stage === 'ask' || stage === 'denied') {
+    const denied = stage === 'denied';
     return (
       <View style={styles.ask}>
-        <Text style={styles.askIcon}>📇</Text>
-        <Text style={styles.askTitle}>{stage === 'denied' ? 'Нет доступа к контактам' : 'Разрешите доступ к контактам'}</Text>
-        <Text style={styles.askText}>
-          {stage === 'denied'
+        <EmptyState
+          icon={denied ? 'lock-closed-outline' : 'people-outline'}
+          title={denied ? 'Нет доступа к контактам' : 'Разрешите доступ к контактам'}
+          text={denied
             ? Platform.OS === 'web'
               ? 'В браузере контакты недоступны. Добавьте гостей вручную.'
               : 'Доступ можно включить в настройках телефона. А пока добавьте гостей вручную.'
-            : 'Контакты нужны, чтобы быстро выбрать гостей. Они читаются только на телефоне, на сервер уходят лишь выбранные вами гости.'}
-        </Text>
-        <ErrorText>{error}</ErrorText>
-        {stage === 'ask' ? <Button title="Разрешить" onPress={allow} style={{ alignSelf: 'stretch' }} /> : null}
-        <Button title={stage === 'ask' ? 'Позже' : 'Добавить вручную'} variant="outline" style={{ alignSelf: 'stretch', marginTop: 10 }}
-          onPress={() => router.replace(`/event/${id}/manual`)} />
+            : 'Так вы быстро выберете гостей. Контакты читаются только на телефоне — на сервер уходят лишь отмеченные вами люди.'}
+        />
+        <View style={{ alignSelf: 'stretch', marginTop: 28 }}>
+          <ErrorText>{error}</ErrorText>
+          {!denied ? <Button title="Разрешить" icon="checkmark" onPress={allow} /> : null}
+          <Button title={denied ? 'Добавить вручную' : 'Позже'} variant={denied ? 'primary' : 'outline'} style={{ marginTop: 10 }}
+            onPress={() => router.replace(`/event/${id}/manual`)} />
+        </View>
       </View>
     );
   }
@@ -103,11 +106,14 @@ export default function ContactsPicker() {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ padding: 16, paddingBottom: 8 }}>
-        <TextInput style={styles.search} placeholder="Поиск контактов…" placeholderTextColor={colors.muted} value={query} onChangeText={setQuery} />
+      <View style={{ padding: 16, paddingTop: 4, paddingBottom: 8 }}>
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <TextInput style={styles.searchInput} placeholder="Поиск контактов…" placeholderTextColor={colors.muted} value={query} onChangeText={setQuery} />
+        </View>
         <View style={styles.selRow}>
-          <Text style={styles.selText}>Выбрано: {selected.size}</Text>
-          {selected.size ? <Pressable onPress={() => setSelected(new Set())}><Text style={styles.clear}>Очистить</Text></Pressable> : null}
+          <T weight="bold" size={14}>Выбрано: {selected.size}</T>
+          {selected.size ? <Pressable onPress={() => setSelected(new Set())}><T weight="semibold" size={14} color={colors.green}>Очистить</T></Pressable> : null}
         </View>
       </View>
       <FlatList
@@ -118,36 +124,32 @@ export default function ContactsPicker() {
         renderItem={({ item }) => {
           const on = selected.has(item.key);
           return (
-            <Pressable style={styles.item} onPress={() => toggle(item.key)} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+            <Pressable style={[styles.item, on && styles.itemOn]} onPress={() => toggle(item.key)} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+              <Avatar name={item.name} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.phone}>{formatPhone(item.phone)}</Text>
+                <T weight="bold" size={15}>{item.name}</T>
+                <T size={13} color={colors.muted}>{formatPhone(item.phone)}</T>
               </View>
-              <View style={[styles.check, on && styles.checkOn]}>{on ? <Text style={{ color: '#fff', fontWeight: '800' }}>✓</Text> : null}</View>
+              <View style={[styles.check, on && styles.checkOn]}>{on ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}</View>
             </Pressable>
           );
         }}
       />
       <View style={styles.bottom}>
         <ErrorText>{error}</ErrorText>
-        <Button title={`Выбрать (${selected.size})`} onPress={save} disabled={!selected.size} loading={saving} />
+        <Button title={`Выбрать (${selected.size})`} icon="checkmark" onPress={save} disabled={!selected.size} loading={saving} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  ask: { flex: 1, alignItems: 'center', padding: 28, paddingTop: 60 },
-  askIcon: { fontSize: 64 },
-  askTitle: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginTop: 16, color: colors.text },
-  askText: { fontSize: 15, color: colors.muted, textAlign: 'center', marginTop: 10, marginBottom: 28, lineHeight: 21 },
-  search: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, borderWidth: 1, borderColor: colors.border },
-  selRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  selText: { fontWeight: '600', color: colors.text },
-  clear: { color: colors.green, fontWeight: '600' },
-  item: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 12, marginBottom: 6 },
-  name: { fontSize: 15, fontWeight: '600', color: colors.text },
-  phone: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  ask: { flex: 1, alignItems: 'center', padding: 24 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.border },
+  searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, fontFamily: font.medium, color: colors.text, outlineStyle: 'none' } as object,
+  selRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', padding: 12, borderRadius: radius.md, marginBottom: 6, borderWidth: 1.5, borderColor: 'transparent' },
+  itemOn: { borderColor: colors.green, backgroundColor: colors.greenSoft },
   check: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: colors.green, borderColor: colors.green },
   bottom: { position: 'absolute', left: 16, right: 16, bottom: 24 },

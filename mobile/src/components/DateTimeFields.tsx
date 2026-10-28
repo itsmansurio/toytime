@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { colors } from '../lib/theme';
+import { colors, radius } from '../lib/theme';
 import { formatDate, toIsoDate, toTime } from '../lib/format';
+import { Ionicons, T } from './ui';
 
 // Дата и время мероприятия: системные пикеры iOS и Android.
 export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {
@@ -22,11 +23,13 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
   return (
     <View>
       <View style={styles.row}>
-        <Pressable style={[styles.box, { flex: 1.4 }]} onPress={() => open('date')} accessibilityRole="button">
-          <Text style={styles.text}>📅  {formatDate(toIsoDate(value))}</Text>
+        <Pressable style={[styles.box, { flex: 1.5 }, iosMode === 'date' && styles.active]} onPress={() => open('date')} accessibilityRole="button">
+          <Ionicons name="calendar-outline" size={19} color={colors.green} />
+          <T weight="semibold" size={15}>{formatDate(toIsoDate(value))}</T>
         </Pressable>
-        <Pressable style={[styles.box, { flex: 1 }]} onPress={() => open('time')} accessibilityRole="button">
-          <Text style={styles.text}>🕖  {toTime(value)}</Text>
+        <Pressable style={[styles.box, { flex: 1 }, iosMode === 'time' && styles.active]} onPress={() => open('time')} accessibilityRole="button">
+          <Ionicons name="time-outline" size={19} color={colors.green} />
+          <T weight="semibold" size={15}>{toTime(value)}</T>
         </Pressable>
       </View>
       {iosMode ? (
@@ -35,6 +38,7 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
           mode={iosMode}
           display={iosMode === 'date' ? 'inline' : 'spinner'}
           locale="ru-RU"
+          accentColor={colors.green}
           minimumDate={iosMode === 'date' ? new Date() : undefined}
           minuteInterval={5}
           onChange={(_, d) => d && onChange(d)}
@@ -46,6 +50,6 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
-  box: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 15, backgroundColor: '#fff' },
-  text: { fontSize: 16, color: colors.text },
+  box: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 15, backgroundColor: '#fff' },
+  active: { borderColor: colors.green, backgroundColor: colors.greenSoft },
 });

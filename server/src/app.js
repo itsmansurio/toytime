@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { HttpError, normalizePhone, parseGuestToken, phoneHash, randomToken, sha256 } from './util.js';
 import { verifyWebhookSignature } from './integrations/whatsapp.js';
 import { verifyPaymentWebhook } from './integrations/payments.js';
-import { notFoundPage, outboxPage, privacyPage, rsvpPage, testCheckoutPage } from './views/pages.js';
+import { calendarFile, notFoundPage, outboxPage, privacyPage, rsvpPage, testCheckoutPage } from './views/pages.js';
 
 const asyncRoute = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
@@ -370,7 +370,7 @@ export function createApp(ctx) {
     const guestId = parseGuestToken(config.linkSecret, token);
     if (!guestId) return null;
     const { rows } = await pool.query(
-      `SELECT g.*, e.title, e.event_date, e.event_time, e.address, e.invitation_text, e.organizer_id
+      `SELECT g.*, e.title, e.event_date, e.event_time, e.starts_at, e.address, e.invitation_text, e.organizer_id
        FROM guests g JOIN events e ON e.id = g.event_id WHERE g.id = $1`, [guestId]);
     return rows[0] || null;
   }
@@ -407,6 +407,14 @@ export function createApp(ctx) {
     }
     if (req.accepts(['html', 'json']) === 'json') return res.json({ rsvp: answer });
     res.redirect(303, `/r/${req.params.token}`);
+  }));
+
+  app.get('/r/:token/calendar.ics', guestLimiter, asyncRoute(async (req, res) => {
+    guestHeaders(res);
+    const row = await loadGuest(req.params.token);
+    if (!row) return res.status(404).type('html').send(notFoundPage());
+    res.set('Content-Disposition', 'attachment; filename="toytime.ics"');
+    res.type('text/calendar').send(calendarFile({ event: row, publicUrl: config.publicUrl, token: req.params.token }));
   }));
 
   app.post('/r/:token/optout', guestLimiter, asyncRoute(async (req, res) => {

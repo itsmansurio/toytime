@@ -1,77 +1,179 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
-import { colors } from '../lib/theme';
+import type { ComponentProps, ReactNode } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type TextProps, type TextStyle, type ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { avatarColors, colors, font, initials, radius, shadow } from '../lib/theme';
 
-export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: {
-  title: string; onPress: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost'; disabled?: boolean; loading?: boolean; style?: ViewStyle;
+export type IconName = ComponentProps<typeof Ionicons>['name'];
+export { Ionicons };
+
+type Weight = keyof typeof font;
+
+export function T({ weight = 'regular', size = 15, color = colors.text, style, ...props }: TextProps & { weight?: Weight; size?: number; color?: string }) {
+  return <Text {...props} style={[{ fontFamily: font[weight], fontSize: size, color, lineHeight: Math.round(size * 1.38) }, style]} />;
+}
+
+export function Button({ title, onPress, variant = 'primary', disabled, loading, style, icon, size = 'lg' }: {
+  title: string; onPress: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost' | 'light'; disabled?: boolean; loading?: boolean;
+  style?: ViewStyle; icon?: IconName; size?: 'lg' | 'md';
 }) {
-  const v = styles[variant];
+  const fg = { primary: '#fff', outline: colors.green, danger: colors.red, ghost: colors.green, light: colors.green }[variant];
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [styles.button, v, (disabled || loading) && styles.disabled, pressed && { opacity: 0.85 }, style]}
+      style={({ pressed }) => [
+        styles.button, size === 'md' && styles.buttonMd, styles[variant],
+        (disabled || loading) && styles.disabled, pressed && { opacity: 0.88, transform: [{ scale: 0.99 }] }, style,
+      ]}
     >
-      {loading ? <ActivityIndicator color={variant === 'primary' ? '#fff' : colors.green} /> : (
-        <Text style={[styles.buttonText, variant !== 'primary' && { color: variant === 'danger' ? colors.red : colors.green }]}>{title}</Text>
+      {loading ? <ActivityIndicator color={fg} /> : (
+        <View style={styles.buttonInner}>
+          {icon ? <Ionicons name={icon} size={size === 'md' ? 18 : 20} color={fg} /> : null}
+          <T weight="bold" size={size === 'md' ? 15 : 16} color={fg}>{title}</T>
+        </View>
       )}
     </Pressable>
   );
 }
 
-export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+export function Card({ children, style }: { children: ReactNode; style?: ViewStyle | ViewStyle[] }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-export function Label({ children }: { children: ReactNode }) {
-  return <Text style={styles.label}>{children}</Text>;
+export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+  return (
+    <View style={styles.sectionRow}>
+      <T weight="bold" size={13} color={colors.muted} style={{ letterSpacing: 0.6, textTransform: 'uppercase' }}>{children}</T>
+      {right}
+    </View>
+  );
 }
 
-export function Field({ label, counter, ...props }: TextInputProps & { label?: string; counter?: boolean }) {
+export function Label({ children }: { children: ReactNode }) {
+  return <T weight="semibold" size={14} color={colors.textSoft} style={{ marginBottom: 8 }}>{children}</T>;
+}
+
+export function Field({ label, counter, icon, ...props }: TextInputProps & { label?: string; counter?: boolean; icon?: IconName }) {
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={{ marginBottom: 18 }}>
       {label ? <Label>{label}</Label> : null}
-      <TextInput placeholderTextColor={colors.muted} {...props} style={[styles.input, props.multiline && { minHeight: 96, textAlignVertical: 'top' }, props.style]} />
-      {counter && props.maxLength ? <Text style={styles.counter}>{(props.value ?? '').length}/{props.maxLength}</Text> : null}
+      <View style={[styles.inputWrap, props.multiline && { alignItems: 'flex-start', paddingTop: 14 }]}>
+        {icon ? <Ionicons name={icon} size={19} color={colors.green} style={{ marginRight: 10, marginTop: props.multiline ? 1 : 0 }} /> : null}
+        <TextInput
+          placeholderTextColor={colors.muted}
+          {...props}
+          style={[styles.input, props.multiline && { minHeight: 92, textAlignVertical: 'top', paddingTop: 0 }, props.style as TextStyle]}
+        />
+      </View>
+      {counter && props.maxLength ? <T size={12} color={colors.muted} style={{ alignSelf: 'flex-end', marginTop: 4 }}>{(props.value ?? '').length}/{props.maxLength}</T> : null}
     </View>
   );
 }
 
 export function ErrorText({ children }: { children: ReactNode }) {
   if (!children) return null;
-  return <Text style={styles.error}>{children}</Text>;
-}
-
-export function TestBanner({ children }: { children: ReactNode }) {
-  return <View style={styles.banner}><Text style={styles.bannerText}>{children}</Text></View>;
-}
-
-export function Stat({ value, label, color }: { value: number; label: string; color: string }) {
   return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={styles.error}>
+      <Ionicons name="alert-circle" size={18} color={colors.red} />
+      <T size={14} color={colors.red} style={{ flex: 1 }}>{children}</T>
     </View>
   );
 }
 
+export function TestBanner({ children }: { children: ReactNode }) {
+  return (
+    <View style={styles.banner}>
+      <Ionicons name="flask-outline" size={18} color={colors.amber} />
+      <T size={13} color="#7A5410" style={{ flex: 1 }}>{children}</T>
+    </View>
+  );
+}
+
+export function IconTile({ name, color = colors.green, bg = colors.greenLight, size = 44 }: { name: IconName; color?: string; bg?: string; size?: number }) {
+  return (
+    <View style={{ width: size, height: size, borderRadius: size * 0.32, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name={name} size={size * 0.5} color={color} />
+    </View>
+  );
+}
+
+export function Avatar({ name, size = 42 }: { name: string; size?: number }) {
+  const [bg, fg] = avatarColors(name);
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <T weight="bold" size={size * 0.36} color={fg}>{initials(name)}</T>
+    </View>
+  );
+}
+
+export function Pill({ label, color, bg, icon }: { label: string; color: string; bg: string; icon?: IconName }) {
+  return (
+    <View style={[styles.pill, { backgroundColor: bg }]}>
+      {icon ? <Ionicons name={icon} size={13} color={color} /> : null}
+      <T weight="semibold" size={12} color={color}>{label}</T>
+    </View>
+  );
+}
+
+// Шкала ответов: придут / не придут / не ответили.
+export function ResponseBar({ yes, no, pending, height = 8 }: { yes: number; no: number; pending: number; height?: number }) {
+  const total = yes + no + pending;
+  if (!total) return <View style={[styles.bar, { height }]} />;
+  return (
+    <View style={[styles.bar, { height }]}>
+      {yes ? <View style={{ flex: yes, backgroundColor: colors.green }} /> : null}
+      {no ? <View style={{ flex: no, backgroundColor: colors.red }} /> : null}
+      {pending ? <View style={{ flex: pending, backgroundColor: '#D5DDD8' }} /> : null}
+    </View>
+  );
+}
+
+export function EmptyState({ icon, title, text, children }: { icon: IconName; title: string; text: string; children?: ReactNode }) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyCircle}>
+        <View style={styles.emptyInner}><Ionicons name={icon} size={40} color={colors.green} /></View>
+      </View>
+      <T weight="bold" size={20} style={{ marginTop: 20, textAlign: 'center' }}>{title}</T>
+      <T size={15} color={colors.muted} style={{ textAlign: 'center', marginTop: 8 }}>{text}</T>
+      {children}
+    </View>
+  );
+}
+
+export function Row({ icon, title, value, onPress, danger, last }: { icon: IconName; title: string; value?: string; onPress?: () => void; danger?: boolean; last?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.row, !last && styles.rowBorder, pressed && { backgroundColor: colors.greenSoft }]}>
+      <IconTile name={icon} size={36} color={danger ? colors.red : colors.green} bg={danger ? colors.redLight : colors.greenLight} />
+      <T weight="semibold" size={15} color={danger ? colors.red : colors.text} style={{ flex: 1 }}>{title}</T>
+      {value ? <T size={14} color={colors.muted}>{value}</T> : null}
+      {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  button: { borderRadius: 14, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', minHeight: 54 },
-  primary: { backgroundColor: colors.green },
+  button: { borderRadius: radius.md, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', minHeight: 56 },
+  buttonMd: { minHeight: 46, paddingVertical: 11, paddingHorizontal: 16 },
+  buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  primary: { backgroundColor: colors.green, ...shadow, shadowOpacity: 0.18 },
   outline: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.green },
-  danger: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.red },
+  danger: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#EBC3BB' },
   ghost: { backgroundColor: 'transparent' },
-  disabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  label: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 16, color: colors.text, backgroundColor: '#fff' },
-  counter: { alignSelf: 'flex-end', color: colors.muted, fontSize: 12, marginTop: 4 },
-  error: { color: colors.red, marginVertical: 8, fontSize: 14 },
-  banner: { backgroundColor: colors.yellow, borderRadius: 12, padding: 12, marginBottom: 12 },
-  bannerText: { color: '#6B4E00', fontSize: 13, lineHeight: 18 },
-  stat: { flex: 1, alignItems: 'center', paddingVertical: 8 },
-  statValue: { fontSize: 28, fontWeight: '700' },
-  statLabel: { fontSize: 13, color: colors.muted, marginTop: 2, textAlign: 'center' },
+  light: { backgroundColor: colors.greenLight },
+  disabled: { opacity: 0.45 },
+  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 18, marginBottom: 14, ...shadow },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 6 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 14, backgroundColor: '#fff' },
+  input: { flex: 1, paddingVertical: 14, fontSize: 16, color: colors.text, fontFamily: font.medium, outlineStyle: 'none' } as unknown as TextStyle,
+  error: { flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: colors.redLight, borderRadius: radius.sm, padding: 12, marginVertical: 10 },
+  banner: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: colors.amberLight, borderRadius: radius.md, padding: 12, marginBottom: 14 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start' },
+  bar: { flexDirection: 'row', borderRadius: 99, overflow: 'hidden', backgroundColor: '#E6ECE8' },
+  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
+  emptyCircle: { width: 128, height: 128, borderRadius: 64, backgroundColor: colors.greenSoft, alignItems: 'center', justifyContent: 'center' },
+  emptyInner: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
 });

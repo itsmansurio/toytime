@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../../lib/api';
 import { normalizePhone } from '../../../lib/phone';
 import { colors } from '../../../lib/theme';
-import { Button, ErrorText, Field } from '../../../components/ui';
+import { Button, ErrorText, Field, IconTile, Ionicons, T } from '../../../components/ui';
 
 export default function ManualGuest() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,13 +34,22 @@ export default function ManualGuest() {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-      <Field label="Имя" placeholder="Алия" value={name} onChangeText={setName} maxLength={100} autoFocus />
-      <Field label="Номер WhatsApp" placeholder="+7 701 234 56 78" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+    <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <IconTile name="person-add" size={64} />
+        <T size={14} color={colors.muted} style={{ textAlign: 'center', marginTop: 10 }}>Приглашение придёт гостю в WhatsApp на этот номер</T>
+      </View>
+      <Field label="Имя" placeholder="Алия Абдрахманова" value={name} onChangeText={setName} maxLength={100} autoFocus icon="person-outline" />
+      <Field label="Номер WhatsApp" placeholder="+7 701 234 56 78" value={phone} onChangeText={setPhone} keyboardType="phone-pad" icon="logo-whatsapp" />
       <ErrorText>{error}</ErrorText>
-      <Button title="Добавить" onPress={() => add(true)} disabled={!phone} loading={loading} />
-      <Button title="Добавить и ввести ещё" variant="ghost" onPress={() => add(false)} disabled={!phone || loading} />
-      {added.length ? <Text style={{ color: colors.muted, marginTop: 8 }}>Добавлены: {added.join(', ')}</Text> : null}
+      <Button title="Добавить" icon="checkmark" onPress={() => add(true)} disabled={!phone} loading={loading} />
+      <Button title="Добавить и ввести ещё" variant="ghost" icon="add" onPress={() => add(false)} disabled={!phone || loading} style={{ marginTop: 6 }} />
+      {added.length ? (
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.green} />
+          <T size={13} color={colors.green}>Добавлены: {added.join(', ')}</T>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

@@ -43,7 +43,8 @@
           "contactsPermission": "ToyTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ],
     "scheme": "toytime",
     "extra": {

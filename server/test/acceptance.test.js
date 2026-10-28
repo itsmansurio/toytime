@@ -343,3 +343,18 @@ test('журнал ошибок доступен только с токеном 
   assert.equal(res.status, 200);
   assert.ok(Array.isArray(res.body));
 });
+
+test('страница гостя: календарь .ics и оформление', async () => {
+  const token = await newOrganizer(env.api);
+  const event = await newEvent(env.api, token);
+  const g = (await env.api.post(`/api/events/${event.id}/guests`).set(auth(token)).send({ guests: [{ name: 'Айжан', phone: '+77015550000' }] })).body.added[0];
+  const t = guestToken(env.config.linkSecret, g.id);
+  const page = await env.api.get(`/r/${t}`);
+  assert.match(page.text, /Құрметті Айжан/);
+  assert.match(page.text, /2gis\.kz/);
+  const ics = await env.api.get(`/r/${t}/calendar.ics`);
+  assert.equal(ics.status, 200);
+  assert.match(ics.headers['content-type'], /text\/calendar/);
+  assert.match(ics.text, /SUMMARY:Свадебный той/);
+  assert.match(ics.text, /DTSTART:\d{8}T140000Z/);
+});

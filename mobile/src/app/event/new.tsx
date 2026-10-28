@@ -1,19 +1,29 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../lib/api';
-import { colors } from '../../lib/theme';
+import { colors, radius, shadow } from '../../lib/theme';
 import { toIsoDate, toTime } from '../../lib/format';
-import { Button, ErrorText, Field, Label } from '../../components/ui';
+import { Button, ErrorText, Field, Ionicons, Label, T } from '../../components/ui';
 import { DateTimeFields } from '../../components/DateTimeFields';
 
 const DEFAULT_TEXT = 'Будем рады видеть вас на нашем празднике! До встречи!';
+const PRESETS = ['Свадебный той', 'Сүндет той', 'Тусау кесер', 'Қыз ұзату', 'День рождения', 'Юбилей'];
 
 function defaultDate() {
   const d = new Date();
   d.setDate(d.getDate() + 30);
   d.setHours(19, 0, 0, 0);
   return d;
+}
+
+function Step({ n, title }: { n: number; title: string }) {
+  return (
+    <View style={styles.step}>
+      <View style={styles.stepNum}><T weight="bold" size={13} color="#fff">{n}</T></View>
+      <T weight="bold" size={16}>{title}</T>
+    </View>
+  );
 }
 
 export default function NewEvent() {
@@ -45,34 +55,62 @@ export default function NewEvent() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <Field label="Название мероприятия" placeholder="Свадебный той" value={title} onChangeText={setTitle} maxLength={50} counter />
-        <Label>Дата и время</Label>
-        <DateTimeFields value={date} onChange={setDate} />
-        <View style={{ height: 16 }} />
-        <Field label="Место проведения" placeholder="Ресторан «Астана», ул. Нурсултана Назарбаева, 10" value={address} onChangeText={setAddress} maxLength={200} />
-        <Field label="Текст приглашения" value={text} onChangeText={setText} multiline maxLength={1000} counter />
-        <Label>Первое напоминание тем, кто не ответил</Label>
-        <View style={styles.options}>
-          {([10, 7] as const).map((d) => (
-            <Pressable key={d} style={styles.option} onPress={() => setFirstReminder(d)} accessibilityRole="radio" accessibilityState={{ checked: firstReminder === d }}>
-              <View style={[styles.radio, firstReminder === d && styles.radioOn]} />
-              <Text style={styles.optionText}>За {d} дней</Text>
-            </Pressable>
-          ))}
+        <View style={styles.card}>
+          <Step n={1} title="Что празднуем" />
+          <Field placeholder="Например, Свадебный той" value={title} onChangeText={setTitle} maxLength={50} counter icon="sparkles-outline" />
+          <View style={styles.presets}>
+            {PRESETS.map((p) => (
+              <Pressable key={p} onPress={() => setTitle(p)} style={[styles.chip, title === p && styles.chipOn]}>
+                <T weight="semibold" size={13} color={title === p ? '#fff' : colors.green}>{p}</T>
+              </Pressable>
+            ))}
+          </View>
         </View>
-        <Text style={styles.hint}>Потом ещё за 3 дня и в день мероприятия. Ответившим напоминания не приходят.</Text>
+
+        <View style={styles.card}>
+          <Step n={2} title="Когда и где" />
+          <DateTimeFields value={date} onChange={setDate} />
+          <View style={{ height: 12 }} />
+          <Field placeholder="Ресторан «Астана», ул. Назарбаева, 10" value={address} onChangeText={setAddress} maxLength={200} icon="location-outline" />
+        </View>
+
+        <View style={styles.card}>
+          <Step n={3} title="Приглашение" />
+          <Field value={text} onChangeText={setText} multiline maxLength={1000} counter icon="chatbubble-ellipses-outline" />
+          <Label>Первое напоминание тем, кто не ответил</Label>
+          <View style={styles.segment}>
+            {([10, 7] as const).map((d) => {
+              const on = firstReminder === d;
+              return (
+                <Pressable key={d} style={[styles.segItem, on && styles.segOn]} onPress={() => setFirstReminder(d)} accessibilityRole="radio" accessibilityState={{ checked: on }}>
+                  <Ionicons name="notifications-outline" size={16} color={on ? '#fff' : colors.textSoft} />
+                  <T weight="bold" size={14} color={on ? '#fff' : colors.textSoft}>За {d} дней</T>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.hint}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.muted} />
+            <T size={12} color={colors.muted} style={{ flex: 1 }}>Затем за 3 дня и в день тоя. Ответившим гостям напоминания не приходят.</T>
+          </View>
+        </View>
+
         <ErrorText>{error}</ErrorText>
-        <Button title="Далее" onPress={submit} disabled={!canSubmit} loading={loading} />
+        <Button title="Далее: гости" icon="arrow-forward" onPress={submit} disabled={!canSubmit} loading={loading} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  options: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: colors.border },
-  option: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.border },
-  radioOn: { borderColor: colors.green, borderWidth: 7 },
-  optionText: { fontSize: 16, color: colors.text },
-  hint: { fontSize: 13, color: colors.muted, marginTop: 8, marginBottom: 16, lineHeight: 18 },
+  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, paddingBottom: 4, marginBottom: 14, ...shadow, shadowOpacity: 0.04 },
+  step: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  stepNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
+  presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -6, marginBottom: 14 },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: colors.greenLight },
+  chipOn: { backgroundColor: colors.green },
+  segment: { flexDirection: 'row', backgroundColor: colors.greyLight, borderRadius: radius.md, padding: 4, gap: 4 },
+  segItem: { flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingVertical: 11, borderRadius: 11 },
+  segOn: { backgroundColor: colors.green },
+  hint: { flexDirection: 'row', gap: 6, marginTop: 10, marginBottom: 12 },
 });
