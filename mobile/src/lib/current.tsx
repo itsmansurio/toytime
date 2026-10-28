@@ -34,3 +34,7 @@ export function useCurrentEvent(intervalMs = 8000) {
   const events = data ?? [];
   return { events, event: pickCurrent(events, currentId), error, loading, reload, setCurrentId };
 }
+
+export function useCurrentId() {
+  return useContext(CurrentContext);
+}

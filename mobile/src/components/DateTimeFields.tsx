@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { colors, radius } from '../lib/theme';
+import { colors, radius, themed } from '../lib/theme';
 import { formatDate, toIsoDate, toTime } from '../lib/format';
 import { Ionicons, T } from './ui';
 
@@ -48,8 +48,8 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
-  box: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#DCE4DD', borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 13, backgroundColor: '#fff' },
+  box: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 13, backgroundColor: colors.card },
   active: { borderColor: colors.green, backgroundColor: colors.greenSoft },
-});
+}));

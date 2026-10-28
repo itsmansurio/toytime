@@ -5,10 +5,11 @@ import * as WebBrowser from 'expo-web-browser';
 import { api } from '../../lib/api';
 import { useCurrentEvent } from '../../lib/current';
 import { useSession } from '../../lib/session';
-import { colors } from '../../lib/theme';
-import { Button, Card, Divider, ErrorText, Muted, Pill, SectionTitle, T } from '../../components/ui';
+import { colors, themed } from '../../lib/theme';
+import { Button, Card, Divider, EmptyState, ErrorText, Muted, Pill, SectionTitle, SkeletonCard, T } from '../../components/ui';
 import { TopHeader } from '../../components/TopHeader';
 import { useToast } from '../../components/Toast';
+import { useTheme } from '../../lib/themeContext';
 
 function confirmDelete(): Promise<boolean> {
   const msg = 'Мероприятие, гости и их ответы будут удалены.';
@@ -20,7 +21,8 @@ function confirmDelete(): Promise<boolean> {
 }
 
 export default function Payment() {
-  const { event, reload, setCurrentId } = useCurrentEvent(5000);
+  useTheme();
+  const { event, loading, reload, setCurrentId } = useCurrentEvent(5000);
   const { config } = useSession();
   const toast = useToast();
   const [stage, setStage] = useState<'idle' | 'paying' | 'waiting'>('idle');
@@ -32,7 +34,7 @@ export default function Payment() {
   const status = event?.paymentStatus;
   const pill = status === 'paid' ? { label: 'Оплачено', color: colors.yes, bg: colors.yesLight }
     : status === 'pending' ? { label: 'Ждёт подтверждения', color: colors.amber, bg: colors.amberLight }
-    : { label: 'Не оплачено', color: '#42642D', bg: '#EDF5E7' };
+    : { label: 'Не оплачено', color: colors.notice, bg: colors.goldLight };
 
   // «Оплачено» ставит только сервер — после подписанного уведомления провайдера.
   const waitForServer = async (id: string) => {
@@ -84,7 +86,10 @@ export default function Payment() {
       <TopHeader />
       <View style={{ padding: 16 }}>
         <SectionTitle>Оплата мероприятия</SectionTitle>
-        <Card>
+        {loading && !event ? <SkeletonCard lines={4} /> : !event ? (
+          <Card><EmptyState compact icon="wallet" title="Нечего оплачивать" text="Создайте мероприятие — оплата 1000 ₸ один раз за той." action="Создать мероприятие" onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} /></Card>
+        ) : null}
+        {event ? <Card>
           <Muted>Стоимость одного мероприятия</Muted>
           <T weight="extrabold" size={29} style={{ letterSpacing: -1, lineHeight: 36 }}>
             {price} ₸ <T weight="semibold" size={13} color={colors.muted}>/ мероприятие</T>
@@ -112,7 +117,7 @@ export default function Payment() {
               ? 'Оплата сейчас тестовая: деньги не списываются. Для запуска подключим платёжного провайдера в Казахстане — например, Kaspi Pay или другой эквайринг.'
               : 'Оплата проходит на защищённой странице провайдера. Статус «Оплачено» ставит сервер после подтверждения.'}
           </Muted>
-        </Card>
+        </Card> : null}
         <Card>
           <T weight="bold" size={15}>Что входит в стоимость</T>
           <Muted style={{ marginTop: 6 }}>
@@ -126,6 +131,6 @@ export default function Payment() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-});
+}));

@@ -6,12 +6,13 @@ import { api, type EventItem, type Guest } from '../../lib/api';
 import { useCurrentEvent } from '../../lib/current';
 import { useRefresh } from '../../lib/useRefresh';
 import { useSession } from '../../lib/session';
-import { colors } from '../../lib/theme';
+import { colors, themed } from '../../lib/theme';
 import { formatDate } from '../../lib/format';
 import { formatPhone } from '../../lib/phone';
-import { Button, Card, CheckLine, Divider, ErrorText, HeaderRow, Muted, SectionTitle, T } from '../../components/ui';
+import { Button, Card, CheckLine, Divider, EmptyState, ErrorText, HeaderRow, Muted, SectionTitle, SkeletonCard, T } from '../../components/ui';
 import { TopHeader } from '../../components/TopHeader';
 import { useToast } from '../../components/Toast';
+import { useTheme } from '../../lib/themeContext';
 
 // Тот же текст, что в шаблоне WhatsApp на сервере (integrations/whatsapp-templates.js).
 function previewText(e: EventItem, guestName: string) {
@@ -22,7 +23,8 @@ function previewText(e: EventItem, guestName: string) {
 
 // «Приглашение гостям» — шаг 3 из 3: кому отправить, напоминания, согласие и предпросмотр.
 export default function Send() {
-  const { event, reload: reloadEvent } = useCurrentEvent(10000);
+  useTheme();
+  const { event, loading: eventLoading, reload: reloadEvent } = useCurrentEvent(10000);
   const id = event?.id;
   const { data, reload, setData } = useRefresh(() => (id ? api.guests(id) : Promise.resolve([] as Guest[])));
   useEffect(() => { reload(); }, [id, reload]);
@@ -93,7 +95,9 @@ export default function Send() {
       <View style={{ padding: 16 }}>
         <HeaderRow onBack={() => router.navigate('/guests')} backLabel="К гостям" right="Шаг 3 из 3" />
         <SectionTitle>Приглашение гостям</SectionTitle>
-        {!event ? <Muted>Сначала создайте мероприятие.</Muted> : (
+        {!event ? (eventLoading ? <SkeletonCard tall /> : (
+          <Card><EmptyState compact icon="calendar-outline" title="Сначала создайте мероприятие" text="Приглашение собирается из данных мероприятия." action="Создать мероприятие" onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} /></Card>
+        )) : (
           <>
             <Card>
               <View style={styles.eventtop}>
@@ -108,7 +112,7 @@ export default function Send() {
                   <CheckLine key={g.id} checked={g.selected} onPress={() => toggle(g)}>
                     <T size={13}>{g.name} <T size={12} color={colors.muted}>· {formatPhone(g.phone)}</T></T>
                   </CheckLine>
-                )) : <Muted style={{ textAlign: 'center', paddingVertical: 20 }}>Сначала добавьте гостей.</Muted>}
+                )) : <EmptyState compact icon="user-plus" title="Некому отправлять" text="Добавьте гостей — и приглашение уйдёт им в WhatsApp." action="Добавить гостей" onAction={() => router.navigate('/guests')} />}
               </View>
               <Divider />
               <CheckLine checked={reminders} onPress={toggleReminders}>Напомнить тем, кто не ответил</CheckLine>
@@ -126,7 +130,7 @@ export default function Send() {
             <SectionTitle>Предпросмотр сообщения</SectionTitle>
             <View style={styles.preview}>
               <View style={styles.bubble}><T size={14} style={{ lineHeight: 20 }}>{previewText(event, selected[0]?.name ?? 'Имя гостя')}</T></View>
-              <Muted style={{ marginTop: 9 }}>Гость получит ссылку с кнопками «Приду» и «Не смогу прийти» — устанавливать ToyTime не нужно.</Muted>
+              <Muted style={{ marginTop: 9 }}>Гость получит ссылку с кнопками «Приду» и «Не смогу прийти» — устанавливать ToiTime не нужно.</Muted>
             </View>
 
             <Card style={{ marginTop: 14 }}>
@@ -146,9 +150,9 @@ export default function Send() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   eventtop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  preview: { backgroundColor: '#E6F0E7', padding: 16, borderRadius: 16 },
-  bubble: { backgroundColor: '#fff', padding: 14, borderTopLeftRadius: 5, borderTopRightRadius: 15, borderBottomLeftRadius: 15, borderBottomRightRadius: 15 },
+  preview: { backgroundColor: colors.greenLight, padding: 16, borderRadius: 16 },
+  bubble: { backgroundColor: colors.card, padding: 14, borderTopLeftRadius: 5, borderTopRightRadius: 15, borderBottomLeftRadius: 15, borderBottomRightRadius: 15 },
   btnrow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-});
+}));

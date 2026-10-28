@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { colors } from '../lib/theme';
+import { colors, themed } from '../lib/theme';
 import { T } from './ui';
 
 // Короткое сообщение снизу, как в макете («Мероприятие сохранено»).
@@ -21,7 +21,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <View style={{ flex: 1 }}>
         {children}
         <Animated.View pointerEvents="none" style={[styles.toast, { opacity, transform: [{ translateY: opacity.interpolate({ inputRange: [0, 1], outputRange: [15, 0] }) }] }]}>
-          <T size={13} color="#fff" style={{ textAlign: 'center' }}>{text}</T>
+          <T size={13} color={colors.bg} style={{ textAlign: 'center' }}>{text}</T>
         </Animated.View>
       </View>
     </ToastContext.Provider>
@@ -30,6 +30,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export const useToast = () => useContext(ToastContext);
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   toast: { position: 'absolute', bottom: 96, alignSelf: 'center', maxWidth: '90%', backgroundColor: colors.text, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
-});
+}));

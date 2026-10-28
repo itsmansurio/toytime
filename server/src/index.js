@@ -8,7 +8,7 @@ const ctx = createContext(config);
 await migrate(ctx.pool);
 const app = createApp(ctx);
 app.listen(config.port, () => {
-  console.log(`ToyTime сервер: ${config.publicUrl} (порт ${config.port})`);
+  console.log(`ToiTime сервер: ${config.publicUrl} (порт ${config.port})`);
   console.log(`WhatsApp: ${ctx.whatsapp.testMode ? 'ТЕСТОВЫЙ РЕЖИМ (эмулятор)' : 'Cloud API'}; оплата: ${ctx.payments.testMode ? 'ТЕСТОВЫЙ РЕЖИМ (эмулятор)' : ctx.payments.name}`);
 });
 startWorker(ctx);

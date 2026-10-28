@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ToyTime",
+    "name": "ToiTime",
     "slug": "toytime",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "kz.toytime.app",
       "infoPlist": {
-        "NSContactsUsageDescription": "ToyTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
+        "NSContactsUsageDescription": "ToiTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
       }
     },
     "android": {
@@ -28,8 +28,8 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "ToyTime",
-      "shortName": "ToyTime",
+      "name": "ToiTime",
+      "shortName": "ToiTime",
       "themeColor": "#123C32"
     },
     "plugins": [
@@ -40,7 +40,7 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "ToyTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
+          "contactsPermission": "ToiTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
         }
       ],
       "expo-notifications",

@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useSession } from '../lib/session';
 import { API_URL } from '../lib/api';
-import { colors, radius } from '../lib/theme';
+import { colors, radius, themed } from '../lib/theme';
 import { ErrorText, Ionicons, T, type IconName } from '../components/ui';
 import { Brand } from '../components/TopHeader';
+import { useTheme } from '../lib/themeContext';
 
 const FEATURES: [IconName, string, string][] = [
   ['create-outline', 'Мероприятие за 2 минуты', 'Название, дата, место и текст приглашения'],
@@ -15,6 +16,7 @@ const FEATURES: [IconName, string, string][] = [
 ];
 
 export default function Welcome() {
+  useTheme();
   const { signIn } = useSession();
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,7 @@ export default function Welcome() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.green }}>
+    <View style={{ flex: 1, backgroundColor: colors.header }}>
       <StatusBar style="light" />
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -46,7 +48,7 @@ export default function Welcome() {
           <View style={{ gap: 12 }}>
             {FEATURES.map(([icon, title, text]) => (
               <View key={title} style={styles.feature}>
-                <View style={styles.featureIcon}><Ionicons name={icon} size={22} color={colors.green} /></View>
+                <View style={styles.featureIcon}><Ionicons name={icon} size={22} color={colors.onLime} /></View>
                 <View style={{ flex: 1 }}>
                   <T weight="bold" size={15} color="#fff">{title}</T>
                   <T size={13} color="#C6D8D0">{text}</T>
@@ -58,7 +60,7 @@ export default function Welcome() {
           <View style={{ flex: 1, minHeight: 24 }} />
           <Pressable style={styles.consent} onPress={() => setConsent(!consent)} accessibilityRole="checkbox" accessibilityState={{ checked: consent }}>
             <View style={[styles.checkbox, consent && styles.checkboxOn]}>
-              {consent ? <Ionicons name="checkmark" size={16} color={colors.green} /> : null}
+              {consent ? <Ionicons name="checkmark" size={16} color={colors.onLime} /> : null}
             </View>
             <T size={13} color="#CFE6D8" style={{ flex: 1 }}>
               Согласен(на) на обработку персональных данных — моих и моих гостей — для отправки приглашений.{' '}
@@ -74,14 +76,14 @@ export default function Welcome() {
             onPress={start}
             accessibilityRole="button"
           >
-            <T weight="bold" size={17} color={colors.green}>{loading ? 'Подождите…' : 'Начать'}</T>
-            {!loading ? <Ionicons name="arrow-forward" size={20} color={colors.green} /> : null}
+            <T weight="bold" size={17} color={colors.onLime}>{loading ? 'Подождите…' : 'Начать'}</T>
+            {!loading ? <Ionicons name="arrow-forward" size={20} color={colors.onLime} /> : null}
           </Pressable>
           <View style={styles.footer}>
             {['Без рекламы', 'Просто', 'Удобно'].map((t, i) => (
               <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 {i ? <View style={styles.dot} /> : null}
-                <T size={12} weight="medium" color="#9CC2AE">{t}</T>
+                <T size={12} weight="medium" color="#C6D8D0">{t}</T>
               </View>
             ))}
           </View>
@@ -91,7 +93,7 @@ export default function Welcome() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   content: { padding: 24, paddingTop: 36, flexGrow: 1 },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tag: { borderWidth: 1, borderColor: '#FFFFFF44', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
@@ -104,4 +106,4 @@ const styles = StyleSheet.create({
   start: { backgroundColor: colors.lime, borderRadius: radius.md, minHeight: 56, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
   footer: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 18 },
   dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.lime },
-});
+}));

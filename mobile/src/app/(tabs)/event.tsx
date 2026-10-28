@@ -3,9 +3,10 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View
 import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../lib/api';
 import { useCurrentEvent } from '../../lib/current';
-import { colors, radius } from '../../lib/theme';
+import { colors, radius, themed } from '../../lib/theme';
 import { toIsoDate, toTime } from '../../lib/format';
-import { Button, Card, ErrorText, Field, HeaderRow, Ionicons, Label, Notice, SectionTitle, T } from '../../components/ui';
+import { Button, Card, ErrorText, FadeIn, Field, HeaderRow, Ionicons, Label, Muted, Notice, SectionTitle, T } from '../../components/ui';
+import { useTheme } from '../../lib/themeContext';
 import { DateTimeFields } from '../../components/DateTimeFields';
 import { TopHeader } from '../../components/TopHeader';
 import { useToast } from '../../components/Toast';
@@ -22,6 +23,7 @@ function defaultDate() {
 
 // «Детали мероприятия» — шаг 1 из 3. Создаёт новое или редактирует текущее.
 export default function EventForm() {
+  useTheme();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const { event, loading: eventsLoading, setCurrentId, reload } = useCurrentEvent(60000);
   const editing = mode !== 'new' && event ? event : null;
@@ -35,6 +37,7 @@ export default function EventForm() {
   const [firstReminder, setFirstReminder] = useState<7 | 10>(10);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<{ title: string; created: boolean } | null>(null);
 
   // Заполняем форму данными текущего мероприятия или очищаем для нового.
   const key = editing ? editing.id : 'new';
@@ -48,7 +51,8 @@ export default function EventForm() {
       setTitle(''); setDate(defaultDate()); setAddress(''); setHost(''); setText(DEFAULT_TEXT); setFirstReminder(10);
     }
     setError(null);
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (mode === 'new') setSaved(null);
+  }, [key, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = async () => {
     if (!title.trim()) { setError('Введите название тоя'); return; }
@@ -65,7 +69,7 @@ export default function EventForm() {
       await reload();
       toast('Мероприятие сохранено');
       router.setParams({ mode: undefined });
-      router.navigate('/');
+      setSaved({ title: saved.title, created: !editing });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -79,13 +83,27 @@ export default function EventForm() {
         <TopHeader />
         <View style={{ padding: 16 }}>
           <HeaderRow onBack={() => router.navigate('/')} right="Шаг 1 из 3" />
+          {saved ? (
+            <FadeIn>
+              <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
+                <View style={styles.okCircle}><Ionicons name="checkmark" size={30} color={colors.onLime} strokeWidth={3} /></View>
+                <T weight="extrabold" size={20} style={{ marginTop: 14, textAlign: 'center' }}>{saved.created ? 'Мероприятие создано' : 'Изменения сохранены'}</T>
+                <Muted style={{ marginTop: 6, textAlign: 'center' }}>«{saved.title}». Следующий шаг — добавить гостей и отправить приглашения.</Muted>
+                <View style={{ alignSelf: 'stretch', gap: 8, marginTop: 20 }}>
+                  <Button title="На главную" icon="home" size="md" onPress={() => { setSaved(null); router.navigate('/'); }} />
+                  <Button title="Добавить гостей" icon="user-plus" variant="light" size="md" onPress={() => { setSaved(null); router.navigate('/guests'); }} />
+                  <Button title="Изменить мероприятие" icon="create-outline" variant="ghost" size="md" onPress={() => setSaved(null)} />
+                </View>
+              </Card>
+            </FadeIn>
+          ) : (<>
           <SectionTitle right={editing ? 'Редактирование' : eventsLoading ? undefined : 'Новое'}>Детали мероприятия</SectionTitle>
           <Card>
             <Field label="Название тоя" placeholder="Например, Тұсау кесер Айсулу" value={title} onChangeText={setTitle} maxLength={50} />
             <View style={styles.presets}>
               {PRESETS.map((p) => (
                 <Pressable key={p} onPress={() => setTitle(p)} style={[styles.chip, title === p && styles.chipOn]}>
-                  <T weight="semibold" size={12} color={title === p ? '#fff' : colors.green}>{p}</T>
+                  <T weight="semibold" size={12} color={title === p ? colors.onPrimary : colors.green}>{p}</T>
                 </Pressable>
               ))}
             </View>
@@ -104,8 +122,8 @@ export default function EventForm() {
                 const on = firstReminder === d;
                 return (
                   <Pressable key={d} style={[styles.segItem, on && styles.segOn]} onPress={() => setFirstReminder(d)} accessibilityRole="radio" accessibilityState={{ checked: on }}>
-                    <Ionicons name="notifications-outline" size={14} color={on ? '#fff' : colors.textSoft} />
-                    <T weight="bold" size={13} color={on ? '#fff' : colors.textSoft}>За {d} дней</T>
+                    <Ionicons name="notifications-outline" size={14} color={on ? colors.onPrimary : colors.textSoft} />
+                    <T weight="bold" size={13} color={on ? colors.onPrimary : colors.textSoft}>За {d} дней</T>
                   </Pressable>
                 );
               })}
@@ -115,18 +133,20 @@ export default function EventForm() {
             <Button title="Сохранить мероприятие" size="md" onPress={save} loading={saving} />
           </Card>
           <Notice>Совет: сначала сохраните мероприятие, затем добавьте гостей и проверьте приглашение.</Notice>
+          </>)}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: -6, marginBottom: 14 },
   chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: colors.greenSoft },
-  chipOn: { backgroundColor: colors.green },
+  chipOn: { backgroundColor: colors.primary },
   grid2: { flexDirection: 'row', gap: 10 },
   segment: { flexDirection: 'row', backgroundColor: colors.bg, borderRadius: radius.sm, padding: 3, gap: 3 },
   segItem: { flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: 9 },
-  segOn: { backgroundColor: colors.green },
-});
+  segOn: { backgroundColor: colors.primary },
+  okCircle: { width: 64, height: 64, borderRadius: 22, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' },
+}));

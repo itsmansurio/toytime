@@ -306,7 +306,7 @@ export function createApp(ctx) {
     );
     const payment = rows[0];
     try {
-      const created = await payments.createPayment({ paymentId: payment.id, amountKzt: config.priceKzt, description: `ToyTime: ${event.title}` });
+      const created = await payments.createPayment({ paymentId: payment.id, amountKzt: config.priceKzt, description: `ToiTime: ${event.title}` });
       await pool.query('UPDATE payments SET provider_payment_id = $2 WHERE id = $1', [payment.id, created.providerPaymentId]);
       await pool.query(`UPDATE events SET payment_status = 'pending' WHERE id = $1 AND payment_status = 'unpaid'`, [event.id]);
       await log.info('payments', payments.testMode, `Создан платёж ${payment.id}`, { eventId: event.id, amount: config.priceKzt });
@@ -518,14 +518,14 @@ export function createApp(ctx) {
       '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
       '<meta name="apple-mobile-web-app-capable" content="yes">',
       '<meta name="mobile-web-app-capable" content="yes">',
-      '<meta name="apple-mobile-web-app-title" content="ToyTime">',
+      '<meta name="apple-mobile-web-app-title" content="ToiTime">',
       '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
       '<meta name="theme-color" content="#123C32">',
     ].join('');
     const indexHtml = fs.readFileSync(path.join(webDir, 'index.html'), 'utf8').replace('</head>', `${pwaTags}</head>`);
     const staticDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'static');
     app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').json({
-      name: 'ToyTime', short_name: 'ToyTime', start_url: '/', display: 'standalone',
+      name: 'ToiTime', short_name: 'ToiTime', start_url: '/', display: 'standalone',
       background_color: '#F5F7F4', theme_color: '#123C32', lang: 'ru',
       icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
     }));

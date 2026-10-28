@@ -4,12 +4,13 @@ import { router } from 'expo-router';
 import { api, type Guest, type Rsvp } from '../../lib/api';
 import { useCurrentEvent } from '../../lib/current';
 import { useRefresh } from '../../lib/useRefresh';
-import { colors, radius } from '../../lib/theme';
+import { colors, radius, themed } from '../../lib/theme';
 import { formatPhone, normalizePhone } from '../../lib/phone';
-import { Button, Card, Checkbox, ErrorText, Field, Ionicons, Muted, SectionTitle, T } from '../../components/ui';
+import { Button, Card, Checkbox, EmptyState, ErrorText, Field, Ionicons, Muted, SectionTitle, Skeleton, T } from '../../components/ui';
 import { TopHeader } from '../../components/TopHeader';
 import { useToast } from '../../components/Toast';
-import { RSVP_LABEL } from '../../lib/status';
+import { rsvpLabel } from '../../lib/status';
+import { useTheme } from '../../lib/themeContext';
 
 const DELIVERY: Record<string, string> = {
   queued: 'в очереди', sending: 'отправляется', sent: 'отправлено', delivered: 'доставлено', read: 'прочитано',
@@ -34,7 +35,7 @@ function confirmDelete(name: string): Promise<boolean> {
 function GuestRow({ guest, last, open, onToggleOpen, onSelect, onStatus, onRemove }: {
   guest: Guest; last: boolean; open: boolean; onToggleOpen: () => void; onSelect: () => void; onStatus: (r: Rsvp) => void; onRemove: () => void;
 }) {
-  const st = RSVP_LABEL[guest.rsvp];
+  const st = rsvpLabel(guest.rsvp);
   const sub = guest.rsvpSource === 'organizer' ? 'отмечено вами' : guest.messageStatus ? `WhatsApp: ${DELIVERY[guest.messageStatus] ?? guest.messageStatus}` : null;
   return (
     <View style={!last && styles.guestWrap}>
@@ -53,14 +54,14 @@ function GuestRow({ guest, last, open, onToggleOpen, onSelect, onStatus, onRemov
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={st.color} />
         </Pressable>
         <Pressable onPress={onRemove} hitSlop={8} accessibilityLabel={`Удалить ${guest.name}`}>
-          <Ionicons name="close" size={19} color="#A2ADA5" />
+          <Ionicons name="close" size={19} color={colors.muted} />
         </Pressable>
       </View>
       {open ? (
         <View style={styles.options}>
           {(['pending', 'yes', 'no'] as Rsvp[]).map((r) => (
-            <Pressable key={r} onPress={() => onStatus(r)} style={[styles.option, guest.rsvp === r && { backgroundColor: RSVP_LABEL[r].bg }]}>
-              <T weight="bold" size={12} color={guest.rsvp === r ? RSVP_LABEL[r].color : colors.textSoft}>{RSVP_LABEL[r].label}</T>
+            <Pressable key={r} onPress={() => onStatus(r)} style={[styles.option, guest.rsvp === r && { backgroundColor: rsvpLabel(r).bg }]}>
+              <T weight="bold" size={12} color={guest.rsvp === r ? rsvpLabel(r).color : colors.textSoft}>{rsvpLabel(r).label}</T>
             </Pressable>
           ))}
         </View>
@@ -70,9 +71,10 @@ function GuestRow({ guest, last, open, onToggleOpen, onSelect, onStatus, onRemov
 }
 
 export default function Guests() {
+  useTheme();
   const { event, loading: eventLoading } = useCurrentEvent(30000);
   const id = event?.id;
-  const { data, error, reload, setData } = useRefresh(() => (id ? api.guests(id) : Promise.resolve([] as Guest[])));
+  const { data, error, reload, setData, loading } = useRefresh(() => (id ? api.guests(id) : Promise.resolve([] as Guest[])));
   useEffect(() => { reload(); }, [id, reload]);
   const toast = useToast();
   const [name, setName] = useState('');
@@ -137,9 +139,8 @@ export default function Guests() {
           {!event ? (
             !eventLoading ? (
               <Card>
-                <T weight="bold" size={15}>Сначала создайте мероприятие</T>
-                <Muted style={{ marginTop: 4, marginBottom: 12 }}>Гости добавляются к мероприятию.</Muted>
-                <Button title="Создать мероприятие" icon="add" size="md" onPress={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} />
+                <EmptyState compact icon="calendar-outline" title="Сначала создайте мероприятие" text="Гости добавляются к мероприятию — это займёт минуту."
+                  action="Создать мероприятие" onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} />
               </Card>
             ) : null
           ) : (
@@ -156,11 +157,17 @@ export default function Guests() {
               </Card>
               <ErrorText>{error}</ErrorText>
               <View style={[styles.listCard]}>
-                {guests.length ? guests.map((g, i) => (
+                {loading && !data ? [0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.guest, { gap: 12 }]}>
+                    <Skeleton width={40} height={40} radius={14} />
+                    <View style={{ flex: 1, gap: 8 }}><Skeleton width="55%" /><Skeleton width="35%" height={11} /></View>
+                  </View>
+                )) : guests.length ? guests.map((g, i) => (
                   <GuestRow key={g.id} last={i === guests.length - 1} guest={g} open={openId === g.id} onToggleOpen={() => setOpenId(openId === g.id ? null : g.id)}
                     onSelect={() => toggle(g)} onStatus={(r) => setStatus(g, r)} onRemove={() => remove(g)} />
                 )) : (
-                  <T size={14} color={colors.muted} style={{ textAlign: 'center', paddingVertical: 25 }}>Пока нет гостей.{'\n'}Добавьте первого гостя выше.</T>
+                  <EmptyState compact icon="people-outline" title="Пока нет гостей" text="Добавьте первого гостя выше или выберите сразу нескольких из контактов телефона."
+                    action="Выбрать из контактов" onAction={() => router.push(`/event/${id}/contacts`)} />
                 )}
               </View>
               <Button title="Перейти к приглашению" icon="arrow-forward" size="md" onPress={() => router.navigate('/send')} disabled={!guests.length} />
@@ -172,13 +179,13 @@ export default function Guests() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   btnrow: { flexDirection: 'row', gap: 8, marginTop: 9 },
-  listCard: { backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 5, marginBottom: 12 },
+  listCard: { backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 5, marginBottom: 12 },
   guestWrap: { borderBottomWidth: 1, borderBottomColor: colors.border },
   guest: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
-  avatar: { width: 40, height: 40, borderRadius: 14, backgroundColor: '#E9F1E8', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 40, height: 40, borderRadius: 14, backgroundColor: colors.greenLight, alignItems: 'center', justifyContent: 'center' },
   select: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 7 },
   options: { flexDirection: 'row', gap: 6, paddingBottom: 12, paddingLeft: 78, justifyContent: 'flex-end' },
-  option: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9, backgroundColor: '#F4F7F4' },
-});
+  option: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9, backgroundColor: colors.bg },
+}));

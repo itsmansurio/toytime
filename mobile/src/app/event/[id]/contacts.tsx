@@ -4,8 +4,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Contact, ContactField, requestPermissionsAsync } from 'expo-contacts';
 import { api } from '../../../lib/api';
 import { formatPhone, normalizePhone } from '../../../lib/phone';
-import { colors, font, radius } from '../../../lib/theme';
+import { colors, font, radius, themed } from '../../../lib/theme';
 import { Avatar, Button, EmptyState, ErrorText, Ionicons, T } from '../../../components/ui';
+import { useTheme } from '../../../lib/themeContext';
 
 interface Candidate { key: string; name: string; phone: string }
 
@@ -28,6 +29,7 @@ async function loadContacts(): Promise<Candidate[]> {
 }
 
 export default function ContactsPicker() {
+  const { mode } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [stage, setStage] = useState<'ask' | 'loading' | 'list' | 'denied'>('ask');
   const [contacts, setContacts] = useState<Candidate[]>([]);
@@ -117,6 +119,7 @@ export default function ContactsPicker() {
         </View>
       </View>
       <FlatList
+      extraData={mode}
         data={filtered}
         keyExtractor={(c) => c.key}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
@@ -130,7 +133,7 @@ export default function ContactsPicker() {
                 <T weight="bold" size={15}>{item.name}</T>
                 <T size={13} color={colors.muted}>{formatPhone(item.phone)}</T>
               </View>
-              <View style={[styles.check, on && styles.checkOn]}>{on ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}</View>
+              <View style={[styles.check, on && styles.checkOn]}>{on ? <Ionicons name="checkmark" size={16} color={colors.onPrimary} strokeWidth={3} /> : null}</View>
             </Pressable>
           );
         }}
@@ -143,14 +146,14 @@ export default function ContactsPicker() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   ask: { flex: 1, alignItems: 'center', padding: 24 },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.border },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: radius.md, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.border },
   searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, fontFamily: font.medium, color: colors.text, outlineStyle: 'none' } as object,
   selRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', padding: 12, borderRadius: radius.md, marginBottom: 6, borderWidth: 1.5, borderColor: 'transparent' },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, padding: 12, borderRadius: radius.md, marginBottom: 6, borderWidth: 1.5, borderColor: 'transparent' },
   itemOn: { borderColor: colors.green, backgroundColor: colors.greenSoft },
   check: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  checkOn: { backgroundColor: colors.green, borderColor: colors.green },
+  checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   bottom: { position: 'absolute', left: 16, right: 16, bottom: 24 },
-});
+}));

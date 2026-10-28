@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, font, radius } from '../lib/theme';
+import { colors, font, radius, themed } from '../lib/theme';
 import { toIsoDate, toTime } from '../lib/format';
 import { Ionicons } from './ui';
 
@@ -33,7 +33,7 @@ export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
-  box: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 13, backgroundColor: '#fff' },
-});
+  box: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 13, backgroundColor: colors.card },
+}));

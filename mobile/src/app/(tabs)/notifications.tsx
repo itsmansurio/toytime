@@ -3,15 +3,16 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { api, type NotificationItem } from '../../lib/api';
 import { useRefresh } from '../../lib/useRefresh';
-import { colors, radius } from '../../lib/theme';
+import { colors, radius, themed } from '../../lib/theme';
 import { EmptyState, ErrorText, HeaderRow, IconTile, T, type IconName } from '../../components/ui';
 import { useCurrentEvent } from '../../lib/current';
 import { TopHeader } from '../../components/TopHeader';
+import { useTheme } from '../../lib/themeContext';
 
 function kind(text: string): { icon: IconName; color: string; bg: string } {
   if (text.includes(' не сможет прийти')) return { icon: 'close', color: colors.red, bg: colors.redLight };
   if (text.includes(' придёт')) return { icon: 'checkmark', color: colors.green, bg: colors.greenLight };
-  if (text.startsWith('Оплата')) return { icon: 'card', color: '#53663A', bg: colors.goldLight };
+  if (text.startsWith('Оплата')) return { icon: 'card', color: colors.notice, bg: colors.goldLight };
   return { icon: 'alert', color: colors.amber, bg: colors.amberLight };
 }
 
@@ -38,24 +39,26 @@ function Item({ item, onOpen }: { item: NotificationItem; onOpen: (eventId: stri
 }
 
 export default function Notifications() {
+  const { mode } = useTheme();
   const { data, error, loading } = useRefresh(api.notifications);
   const { setCurrentId } = useCurrentEvent(60000);
   useFocusEffect(useCallback(() => () => { api.markNotificationsRead().catch(() => {}); }, []));
   return (
     <FlatList
+      extraData={mode}
       contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
       data={data ?? []}
       keyExtractor={(n) => String(n.id)}
       ListHeaderComponent={<><TopHeader title="Уведомления" subtitle="Ответы гостей, оплата и статусы рассылки." /><View style={{ paddingHorizontal: 16, paddingTop: 16 }}><HeaderRow onBack={() => router.navigate('/')} /><ErrorText>{error}</ErrorText></View></>}
       ListEmptyComponent={loading ? undefined : (
-        <EmptyState icon="notifications-outline" title="Пока тихо" text="Здесь появятся ответы гостей, подтверждения оплаты и статусы рассылки." />
+        <EmptyState icon="notifications-outline" title="Пока тихо" text="Здесь появятся ответы гостей, подтверждения оплаты и статусы рассылки." action="Добавить гостей" onAction={() => router.navigate('/guests')} />
       )}
       renderItem={({ item }) => <View style={{ paddingHorizontal: 16 }}><Item item={item} onOpen={(eventId) => { setCurrentId(eventId); router.navigate('/guests'); }} /></View>}
     />
   );
 }
 
-const styles = StyleSheet.create({
-  item: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: radius.lg, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+const styles = themed(() => StyleSheet.create({
+  item: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: colors.card, padding: 14, borderRadius: radius.lg, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   unread: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.green },
-});
+}));

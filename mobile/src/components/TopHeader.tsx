@@ -1,19 +1,31 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../lib/api';
-import { colors, radius } from '../lib/theme';
+import { colors, radius, themed } from '../lib/theme';
+import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/session';
 import { useRefresh } from '../lib/useRefresh';
-import { Ionicons, T } from './ui';
+import { Ionicons, T, type IconName } from './ui';
+import { useCommandPalette } from './CommandPalette';
 
-// Тёмно-зелёная шапка со скруглением снизу — как в макете заказчика.
+// Шапка из макета заказчика: тёмно-зелёная, со скруглением снизу, логотип ToiTime.
 export function Brand({ size = 23 }: { size?: number }) {
   return (
-    <T weight="extrabold" size={size} color="#fff" style={{ letterSpacing: -0.8 }}>
-      Toy<T weight="extrabold" size={size} color={colors.lime}>Time</T>
+    <T weight="extrabold" size={size} color="#FFFFFF" style={{ letterSpacing: -0.8 }}>
+      Toi<T weight="extrabold" size={size} color="#D8F27B">Time</T>
     </T>
+  );
+}
+
+function HeaderIcon({ name, label, onPress, badge }: { name: IconName; label: string; onPress: () => void; badge?: number }) {
+  return (
+    <Pressable style={({ pressed }) => [styles.icon, pressed && { backgroundColor: '#FFFFFF33', transform: [{ scale: 0.94 }] }]}
+      onPress={onPress} accessibilityLabel={label} accessibilityRole="button" hitSlop={4}>
+      <Ionicons name={name} size={17} color="#FFFFFF" />
+      {badge ? <View style={styles.badge}><T weight="bold" size={9} color="#123C32" style={{ lineHeight: 12 }}>{badge > 9 ? '9+' : badge}</T></View> : null}
+    </Pressable>
   );
 }
 
@@ -21,38 +33,41 @@ export function TopHeader({ title = 'Той начинается\nс хорош�
   title?: string; subtitle?: string; children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const { mode, toggle } = useTheme();
   const { config } = useSession();
+  const palette = useCommandPalette();
   const demo = config?.testMode.whatsapp || config?.testMode.payments;
   const { data: notes } = useRefresh(api.notifications, 15000);
   const unread = (notes ?? []).filter((n) => !n.read).length;
+  const tag = <View style={styles.tag}><T weight="semibold" size={11} color="#E3EEE8">{demo ? 'БЕЗ РЕКЛАМЫ · ДЕМО' : 'БЕЗ РЕКЛАМЫ'}</T></View>;
+  const wide = width >= 470;
   return (
-    <View style={[styles.top, { paddingTop: insets.top + 22 }]}>
+    <View style={[styles.top, { paddingTop: insets.top + 20 }]}>
       <View style={styles.line}>
         <Brand />
         <View style={styles.right}>
-          <View style={styles.tag}><T weight="semibold" size={11} color="#E3EEE8">{demo ? 'БЕЗ РЕКЛАМЫ · ДЕМО' : 'БЕЗ РЕКЛАМЫ'}</T></View>
-          <Pressable style={styles.icon} onPress={() => router.push('/notifications')} accessibilityLabel="Уведомления" hitSlop={6}>
-            <Ionicons name="notifications-outline" size={18} color="#fff" />
-            {unread ? <View style={styles.badge}><T weight="bold" size={9} color={colors.green} style={{ lineHeight: 12 }}>{unread > 9 ? '9+' : unread}</T></View> : null}
-          </Pressable>
-          <Pressable style={styles.icon} onPress={() => router.push('/settings')} accessibilityLabel="Настройки" hitSlop={6}>
-            <Ionicons name="settings-outline" size={18} color="#fff" />
-          </Pressable>
+          {wide ? tag : null}
+          <HeaderIcon name="search" label="Поиск (Ctrl+K)" onPress={palette.open} />
+          <HeaderIcon name={mode === 'dark' ? 'sun' : 'moon'} label={mode === 'dark' ? 'Светлая тема' : 'Тёмная тема'} onPress={toggle} />
+          <HeaderIcon name="notifications-outline" label="Уведомления" onPress={() => router.push('/notifications')} badge={unread} />
+          <HeaderIcon name="settings-outline" label="Настройки" onPress={() => router.push('/settings')} />
         </View>
       </View>
-      <T weight="extrabold" size={25} color="#fff" style={styles.title}>{title}</T>
-      <T size={13} color="#C6D8D0">{subtitle}</T>
+      {!wide ? <View style={{ flexDirection: 'row', marginTop: 16 }}>{tag}</View> : null}
+      <T weight="extrabold" size={25} color="#FFFFFF" style={[styles.title, !wide && { marginTop: 14 }]}>{title}</T>
+      <T size={13} color={colors.headerSub}>{subtitle}</T>
       {children}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  top: { backgroundColor: colors.green, paddingHorizontal: 19, paddingBottom: 25, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl },
+const styles = themed(() => StyleSheet.create({
+  top: { backgroundColor: colors.header, paddingHorizontal: 19, paddingBottom: 25, borderBottomLeftRadius: radius.xl + 1, borderBottomRightRadius: radius.xl + 1 },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   right: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tag: { borderWidth: 1, borderColor: '#FFFFFF44', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
-  icon: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFFFFF1A', alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: -3, right: -3, minWidth: 15, height: 15, paddingHorizontal: 3, borderRadius: 8, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' },
-  title: { lineHeight: 28, marginTop: 25, marginBottom: 8, maxWidth: 340, letterSpacing: -0.6 },
-});
+  icon: { width: 32, height: 32, borderRadius: 11, backgroundColor: '#FFFFFF1A', alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, paddingHorizontal: 3, borderRadius: 8, backgroundColor: '#D8F27B', alignItems: 'center', justifyContent: 'center' },
+  title: { lineHeight: 29, marginTop: 24, marginBottom: 8, maxWidth: 340, letterSpacing: -0.7 },
+}));

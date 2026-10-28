@@ -17,65 +17,81 @@ const ICON = {
 const icon = (name, size = 18) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
 
-// Стиль по макету заказчика: тёмно-зелёная шапка со скруглением, салатовый акцент, белые карточки.
+// Стиль по макету заказчика: тёмно-зелёная шапка со скруглением, салатовый акцент.
+// Две темы (по настройке телефона), контраст текста WCAG AAA.
 const STYLE = `
-  :root { --green:#123c32; --green2:#1d6a54; --lime:#d8f27b; --bg:#f5f7f4; --text:#17231f; --muted:#738078; --line:#e5eae5;
-          --soft:#3e4c45; --green-light:#eaf2e9; --red:#b94b43; --red-light:#ffebe8; --yes:#267143; --yes-light:#e3f5e8; }
+  :root { color-scheme: light dark;
+          --bg:#f5f7f4; --card:#fff; --text:#17231f; --soft:#2f3b35; --muted:#4a5650; --line:#e2e8e3;
+          --accent:#123c32; --header:#123c32; --header-sub:#d5e4dd; --lime:#d8f27b; --on-lime:#123c32;
+          --chip:#edf2ee; --green-light:#eaf2e9; --red:#8a2720; --red-light:#ffebe8; --yes:#1a5230; --yes-light:#e3f5e8;
+          --notice:#3a4a22; --notice-bg:#f1f6e6; --primary:#123c32; --on-primary:#fff; --msg:#fff; --preview:#e6f0e7;
+          --shadow: 0 6px 20px rgba(23,35,31,.06); }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0c1411; --card:#141f1b; --text:#f1f5f2; --soft:#d6e0da; --muted:#b4c1ba; --line:#24332d;
+            --accent:#d8f27b; --header:#0f2a22; --header-sub:#c9d9d1; --chip:#1b2924; --green-light:#1e2e28;
+            --red:#ffbdb5; --red-light:#3a1b18; --yes:#9be8b3; --yes-light:#123020; --notice:#dcebb8; --notice-bg:#1b2616;
+            --primary:#d8f27b; --on-primary:#10251d; --msg:#1a2723; --preview:#1e2e28; --shadow: 0 6px 24px rgba(0,0,0,.35); }
+  }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin:0; font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  body { margin:0; font: 15px/1.45 Inter, -apple-system, "SF Pro Text", BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
   main { max-width: 500px; margin: 0 auto; padding: 0 0 36px; }
-  a { color: var(--green); }
-  .hero { background: var(--green); color:#fff; padding: 22px 19px 26px; border-radius: 0 0 25px 25px; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: no-preference) { .card { animation: rise .32s ease-out both; } .card + .card { animation-delay: .06s; } }
+  .hero { background: var(--header); color:#fff; padding: 22px 19px 26px; border-radius: 0 0 25px 25px; }
   .topline { display:flex; justify-content:space-between; align-items:center; }
-  .brand { font-size: 23px; font-weight: 850; letter-spacing: -.8px; color:#fff; }
-  .brand span { color: var(--lime); }
+  .brand { font-size: 23px; font-weight: 800; letter-spacing: -.8px; color:#fff; }
+  .brand span { color: #d8f27b; }
   .tag { font-size: 11px; border: 1px solid #ffffff44; border-radius: 20px; padding: 6px 9px; color: #e3eee8; }
-  .kicker { margin-top: 24px; font-size: 13px; color: var(--lime); font-weight: 700; }
-  .title { font-size: 27px; line-height: 1.12; font-weight: 800; margin: 6px 0 8px; letter-spacing: -.6px; }
-  .sub { color: #c6d8d0; font-size: 13px; margin: 0; }
-  .card { background:#fff; border: 1px solid var(--line); border-radius: 18px; margin: 0 16px 12px; padding: 16px; box-shadow: 0 3px 12px #17231f05; }
+  .kicker { margin-top: 24px; font-size: 13px; color: #d8f27b; font-weight: 700; }
+  .title { font-size: 27px; line-height: 1.12; font-weight: 800; margin: 6px 0 8px; letter-spacing: -.7px; }
+  .sub { color: var(--header-sub); font-size: 13px; margin: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; margin: 0 16px 12px; padding: 16px; box-shadow: var(--shadow); }
   .hero + .card, .hero + .banner { margin-top: 16px; }
   .greet { font-size: 17px; font-weight: 800; margin: 0 0 4px; letter-spacing: -.3px; }
   .invite { white-space: pre-wrap; color: var(--soft); line-height: 1.5; font-size: 15px; margin: 6px 0 0; }
   .facts { display:grid; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
   .fact { display:flex; gap: 11px; align-items:center; }
-  .fact .ic { flex: none; width: 40px; height: 40px; border-radius: 14px; background: var(--green-light); color: var(--green); display:grid; place-items:center; }
+  .fact .ic { flex: none; width: 40px; height: 40px; border-radius: 14px; background: var(--green-light); color: var(--accent); display:grid; place-items:center; }
   .fact b { display:block; font-size: 14px; } .fact span { color: var(--muted); font-size: 12px; }
   .chips { display:flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-  .chip { display:inline-flex; align-items:center; gap:6px; padding: 9px 12px; border-radius: 12px; background: #edf2ee; color: var(--green);
-          font-weight: 750; font-size: 13px; text-decoration: none; }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding: 9px 12px; border-radius: 12px; background: var(--chip); color: var(--accent);
+          font-weight: 700; font-size: 13px; text-decoration: none; transition: transform .15s ease; }
+  .chip:active { transform: scale(.96); }
   .q { font-weight: 800; font-size: 18px; margin: 0 0 12px; letter-spacing: -.3px; }
   .btns { display:grid; gap: 8px; }
   button { font-family: inherit; cursor: pointer; }
-  .btn { width:100%; border:0; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 750; display:flex; align-items:center; justify-content:center; gap:8px; }
-  .btn:active { transform: scale(.99); }
-  .yes { background: var(--lime); color: var(--green); }
-  .no { background:#fff; color: var(--green); border: 1px solid var(--line); }
-  .primary { background: var(--green); color:#fff; }
-  .sel-yes .yes { box-shadow: 0 0 0 3px #1d6a5433; }
+  .btn { width:100%; border:0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; display:flex; align-items:center; justify-content:center; gap:8px;
+         transition: transform .12s ease, box-shadow .2s ease; }
+  .btn:active { transform: scale(.98); }
+  .yes { background: var(--lime); color: var(--on-lime); }
+  .no { background: var(--card); color: var(--accent); border: 1px solid var(--line); }
+  .primary { background: var(--primary); color: var(--on-primary); }
+  .sel-yes .yes { box-shadow: 0 0 0 3px #1d6a5455; }
   .sel-no .no { background: var(--red-light); color: var(--red); border-color: var(--red-light); }
   .answer { display:flex; gap: 12px; align-items:center; border-radius: 14px; padding: 12px; margin-bottom: 12px; }
   .answer.yes-a { background: var(--yes-light); } .answer.no-a { background: var(--red-light); }
-  .answer .big { flex:none; width: 42px; height: 42px; border-radius: 14px; display:grid; place-items:center; color:#fff; }
+  .answer .big { flex:none; width: 42px; height: 42px; border-radius: 14px; display:grid; place-items:center; color: var(--bg); }
   .yes-a .big { background: var(--yes); } .no-a .big { background: var(--red); }
   .answer b { display:block; font-size: 15px; } .answer span { font-size: 12px; color: var(--soft); }
   .change { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
   .foot { text-align:center; color: var(--muted); font-size: 12px; padding: 6px 24px; line-height: 1.6; }
   .linkbtn { background:none; border:0; color: var(--muted); text-decoration: underline; font-size: 12px; padding: 6px; }
-  .banner { display:flex; gap:8px; align-items:center; background:#f1f6e6; color:#53663a; border-radius: 14px; padding: 12px; font-size: 12px; margin: 0 16px 12px; }
+  .banner { display:flex; gap:8px; align-items:center; background: var(--notice-bg); color: var(--notice); border-radius: 14px; padding: 12px; font-size: 12px; margin: 0 16px 12px; }
   .plain { padding: 16px; }
   .plain .card { margin: 0 0 12px; }
   h1 { font-size: 20px; margin: 0 0 12px; letter-spacing: -.3px; }
-  .price { font-size: 29px; font-weight: 850; letter-spacing: -1px; margin: 4px 0; }
-  .msg { white-space: pre-wrap; background: #fff; border-radius: 5px 15px 15px 15px; padding: 14px; font-size: 14px; line-height: 1.5; }
-  .preview { background: #e6f0e7; border-radius: 16px; padding: 12px; }
+  .price { font-size: 29px; font-weight: 800; letter-spacing: -1px; margin: 4px 0; }
+  .msg { white-space: pre-wrap; background: var(--msg); border-radius: 5px 15px 15px 15px; padding: 14px; font-size: 14px; line-height: 1.5; }
+  .preview { background: var(--preview); border-radius: 16px; padding: 12px; }
   .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
 `;
 
 const hero = ({ tag, kicker, title, sub }) => `
     <section class="hero">
-      <div class="topline"><div class="brand">Toy<span>Time</span></div>${tag ? `<div class="tag">${h(tag)}</div>` : ''}</div>
+      <div class="topline"><div class="brand">Toi<span>Time</span></div>${tag ? `<div class="tag">${h(tag)}</div>` : ''}</div>
       ${kicker ? `<div class="kicker">${h(kicker)}</div>` : ''}
       <div class="title"${kicker ? '' : ' style="margin-top:22px"'}>${h(title)}</div>
       ${sub ? `<p class="sub">${h(sub)}</p>` : ''}
@@ -86,6 +102,8 @@ function layout(title, body, { bodyClass = '' } = {}) {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#123c32">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>${h(title)}</title>
 <style>${STYLE}</style></head>
 <body class="${bodyClass}"><main>${body}</main></body></html>`;
@@ -136,9 +154,9 @@ export function rsvpPage({ guest, event, token, optedOut, flash }) {
     <div class="foot">
       Устанавливать приложение не нужно.<br>
       ${optedOut
-        ? 'Вы отказались от сообщений ToyTime — напоминаний больше не будет.'
+        ? 'Вы отказались от сообщений ToiTime — напоминаний больше не будет.'
         : `<form method="post" action="/r/${h(token)}/optout" style="display:inline"><button class="linkbtn">Не присылать мне напоминания</button></form>`}
-      <br><a href="/privacy">Конфиденциальность</a> · ToyTime — без рекламы
+      <br><a href="/privacy">Конфиденциальность</a> · ToiTime — без рекламы
     </div>
   `);
 }
@@ -163,7 +181,7 @@ export function testCheckoutPage({ payment, event }) {
         <button class="btn primary" name="result" value="paid">${icon('check', 20)} Тест: оплата прошла</button>
         <button class="btn no" name="result" value="failed">${icon('close', 20)} Тест: оплата отклонена</button>
       </form>` : `<div class="answer ${payment.status === 'paid' ? 'yes-a' : 'no-a'}"><div class="big">${icon(payment.status === 'paid' ? 'check' : 'close', 24)}</div>
-        <div><b>${payment.status === 'paid' ? 'Оплата подтверждена' : 'Оплата отклонена'}</b><span>Вернитесь в приложение ToyTime.</span></div></div>`}
+        <div><b>${payment.status === 'paid' ? 'Оплата подтверждена' : 'Оплата отклонена'}</b><span>Вернитесь в приложение ToiTime.</span></div></div>`}
       <p class="foot" style="padding:14px 0 0">${icon('shield', 14)} Статус «оплачено» ставит только сервер — после подписанного уведомления от провайдера.</p>
     </section>`);
 }
@@ -198,7 +216,7 @@ export function calendarFile({ event, publicUrl, token }) {
   const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const esc = (s) => String(s).replace(/[\\;,]/g, (c) => '\\' + c).replace(/\r?\n/g, '\\n');
   return [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ToyTime//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ToiTime//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'BEGIN:VEVENT', `UID:${token}@toytime`, `DTSTAMP:${fmt(new Date())}`, `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
     `SUMMARY:${esc(event.title)}`, `LOCATION:${esc(event.address)}`, `DESCRIPTION:${esc(event.invitation_text)}\\n\\n${publicUrl}/r/${token}`,
     'END:VEVENT', 'END:VCALENDAR', '',
