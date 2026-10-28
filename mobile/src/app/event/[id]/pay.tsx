@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { api } from '../../../lib/api';
 import { useRefresh } from '../../../lib/useRefresh';
-import { colors, radius, shadow } from '../../../lib/theme';
+import { colors, radius } from '../../../lib/theme';
 import { formatDate, pluralGuests } from '../../../lib/format';
 import { Button, ErrorText, IconTile, Ionicons, T, TestBanner, type IconName } from '../../../components/ui';
 
@@ -111,7 +111,7 @@ export default function Pay() {
 }
 
 const styles = StyleSheet.create({
-  receipt: { borderRadius: radius.xl, overflow: 'hidden', backgroundColor: '#fff', marginBottom: 14, ...shadow },
+  receipt: { borderRadius: radius.xl, overflow: 'hidden', backgroundColor: '#fff', marginBottom: 14, borderWidth: 1, borderColor: colors.border },
   receiptTop: { backgroundColor: colors.green, alignItems: 'center', paddingVertical: 24, paddingHorizontal: 20 },
   receiptBody: { padding: 18, gap: 14 },
   line: { flexDirection: 'row', alignItems: 'center', gap: 10 },

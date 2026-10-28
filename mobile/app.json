@@ -15,7 +15,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F5C3A",
+        "backgroundColor": "#123C32",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -30,7 +30,7 @@
       "favicon": "./assets/favicon.png",
       "name": "ToyTime",
       "shortName": "ToyTime",
-      "themeColor": "#0F5C3A"
+      "themeColor": "#123C32"
     },
     "plugins": [
       "expo-router",

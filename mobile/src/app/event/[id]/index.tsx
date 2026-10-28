@@ -1,11 +1,9 @@
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../../lib/api';
 import { useRefresh } from '../../../lib/useRefresh';
-import { colors, radius, shadow } from '../../../lib/theme';
+import { colors, radius } from '../../../lib/theme';
 import { formatDate, reminderSchedule, shortDate } from '../../../lib/format';
 import { Button, Card, ErrorText, Ionicons, ResponseBar, SectionTitle, T, type IconName } from '../../../components/ui';
 import { StatTiles } from '../../../components/Stats';
@@ -43,9 +41,8 @@ function TimelineItem({ icon, title, sub, status, done, last }: { icon: IconName
 export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: e, error } = useRefresh(() => api.event(id), 8000);
-  const insets = useSafeAreaInsets();
 
-  if (!e) return <View style={{ padding: 16, paddingTop: insets.top + 60 }}><ErrorText>{error}</ErrorText></View>;
+  if (!e) return <View style={{ padding: 16 }}><ErrorText>{error}</ErrorText></View>;
 
   const stats = e.stats ?? { total: 0, yes: 0, no: 0, pending: 0 };
   const sentCount = (kind: string) => (e.messages ?? []).filter((m) => m.kind === kind && ['sent', 'delivered', 'read'].includes(m.status)).reduce((s, m) => s + m.n, 0);
@@ -61,24 +58,23 @@ export default function EventScreen() {
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
       <StatusBar style="light" />
-      <LinearGradient colors={['#13704A', colors.green, colors.greenDark]} style={[styles.hero, { paddingTop: insets.top + 56 }]}>
-        <View style={styles.heroGlow} />
+      <View style={[styles.hero, { paddingTop: 4 }]}>
         <View style={styles.badge}>
-          <Ionicons name="sparkles" size={13} color={colors.gold} />
-          <T weight="bold" size={12} color={colors.goldLight}>{daysLeft > 0 ? `Через ${daysLeft} дн.` : 'Сегодня'}</T>
+          <Ionicons name="time-outline" size={13} color={colors.green} />
+          <T weight="bold" size={12} color={colors.green}>{daysLeft > 0 ? `Через ${daysLeft} дн.` : 'Сегодня'}</T>
         </View>
-        <T weight="extrabold" size={26} color="#fff" style={{ marginTop: 10 }}>{e.title}</T>
+        <T weight="extrabold" size={25} color="#fff" style={{ marginTop: 12, letterSpacing: -0.6, lineHeight: 29 }}>{e.title}</T>
         <View style={styles.heroMeta}><Ionicons name="calendar-outline" size={16} color="#CFE6D8" /><T weight="medium" size={14} color="#E3F0E8">{formatDate(e.eventDate)}, {e.eventTime}</T></View>
         <Pressable style={styles.heroMeta} onPress={() => Linking.openURL(`https://2gis.kz/search/${encodeURIComponent(e.address)}`)}>
           <Ionicons name="location-outline" size={16} color="#CFE6D8" />
           <T weight="medium" size={14} color="#E3F0E8" style={{ flex: 1, textDecorationLine: 'underline' }}>{e.address}</T>
         </Pressable>
-      </LinearGradient>
+      </View>
 
       <View style={styles.body}>
-        <Card style={{ marginTop: -28 }}>
+        <Card style={{ marginTop: 16 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <T weight="bold" size={16}>Ответы гостей</T>
+            <T weight="extrabold" size={16}>Ответы гостей</T>
             <T weight="semibold" size={13} color={colors.muted}>Всего {stats.total}</T>
           </View>
           <StatTiles yes={stats.yes} no={stats.no} pending={stats.pending} />
@@ -114,7 +110,7 @@ export default function EventScreen() {
         ) : null}
 
         <SectionTitle>Текст приглашения</SectionTitle>
-        <Card style={{ borderLeftWidth: 4, borderLeftColor: colors.gold }}>
+        <Card style={{ backgroundColor: colors.greenLight, borderColor: colors.greenLight }}>
           <T size={15} color={colors.textSoft}>{e.invitationText}</T>
         </Card>
 
@@ -125,9 +121,8 @@ export default function EventScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { paddingHorizontal: 20, paddingBottom: 48, overflow: 'hidden' },
-  heroGlow: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: '#fff', opacity: 0.06, top: -80, right: -60 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(201,162,75,0.22)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  hero: { paddingHorizontal: 20, paddingBottom: 26, backgroundColor: colors.green, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: colors.lime, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   body: { paddingHorizontal: 16 },
   actions: { flexDirection: 'row', gap: 10, marginBottom: 18 },

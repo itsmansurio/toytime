@@ -12,7 +12,7 @@ function RootStack() {
     <Stack
       screenOptions={{
         headerTintColor: colors.green,
-        headerTitleStyle: { color: colors.text, fontFamily: font.bold, fontSize: 17 },
+        headerTitleStyle: { color: colors.text, fontFamily: font.extrabold, fontSize: 18 },
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.bg },
         headerBackTitle: 'Назад',
@@ -25,7 +25,7 @@ function RootStack() {
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="event/new" options={{ title: 'Новое мероприятие' }} />
-        <Stack.Screen name="event/[id]/index" options={{ title: '', headerTransparent: true, headerTintColor: '#fff' }} />
+        <Stack.Screen name="event/[id]/index" options={{ title: '', headerTintColor: '#fff', headerStyle: { backgroundColor: colors.green } }} />
         <Stack.Screen name="event/[id]/guests" options={{ title: 'Гости' }} />
         <Stack.Screen name="event/[id]/contacts" options={{ title: 'Выбор гостей' }} />
         <Stack.Screen name="event/[id]/manual" options={{ title: 'Новый гость', presentation: 'modal' }} />

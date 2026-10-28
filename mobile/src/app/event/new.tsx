@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../lib/api';
-import { colors, radius, shadow } from '../../lib/theme';
+import { colors, radius } from '../../lib/theme';
 import { toIsoDate, toTime } from '../../lib/format';
 import { Button, ErrorText, Field, Ionicons, Label, T } from '../../components/ui';
 import { DateTimeFields } from '../../components/DateTimeFields';
@@ -20,8 +20,8 @@ function defaultDate() {
 function Step({ n, title }: { n: number; title: string }) {
   return (
     <View style={styles.step}>
-      <View style={styles.stepNum}><T weight="bold" size={13} color="#fff">{n}</T></View>
-      <T weight="bold" size={16}>{title}</T>
+      <T weight="extrabold" size={17} style={{ letterSpacing: -0.3 }}>{title}</T>
+      <View style={styles.stepNum}><T weight="bold" size={11} color={colors.green}>Шаг {n} из 3</T></View>
     </View>
   );
 }
@@ -103,13 +103,13 @@ export default function NewEvent() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, paddingBottom: 4, marginBottom: 14, ...shadow, shadowOpacity: 0.04 },
-  step: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  stepNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
+  card: { backgroundColor: '#fff', borderRadius: radius.lg, padding: 16, paddingBottom: 4, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
+  step: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
+  stepNum: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, backgroundColor: colors.lime },
   presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -6, marginBottom: 14 },
-  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: colors.greenLight },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: colors.greenSoft },
   chipOn: { backgroundColor: colors.green },
-  segment: { flexDirection: 'row', backgroundColor: colors.greyLight, borderRadius: radius.md, padding: 4, gap: 4 },
+  segment: { flexDirection: 'row', backgroundColor: colors.bg, borderRadius: radius.md, padding: 4, gap: 4 },
   segItem: { flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingVertical: 11, borderRadius: 11 },
   segOn: { backgroundColor: colors.green },
   hint: { flexDirection: 'row', gap: 6, marginTop: 10, marginBottom: 12 },

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSession } from '../../lib/session';
 import { API_URL } from '../../lib/api';
-import { colors, radius, shadow } from '../../lib/theme';
+import { colors, radius } from '../../lib/theme';
 import { ErrorText, IconTile, Row, SectionTitle, T, TestBanner } from '../../components/ui';
+import { TopHeader } from '../../components/TopHeader';
 
 function confirm(title: string, message: string): Promise<boolean> {
   if (Platform.OS === 'web') return Promise.resolve(window.confirm(`${title}\n\n${message}`));
@@ -26,7 +27,9 @@ export default function Settings() {
   const testParts = [config?.testMode.whatsapp && 'сообщения WhatsApp не уходят реальным гостям', config?.testMode.payments && 'оплата не списывается'].filter(Boolean);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 40 }}>
+    <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <TopHeader title="Настройки" subtitle="Данные, конфиденциальность и поддержка." />
+      <View style={{ padding: 16 }}>
       {testParts.length ? <TestBanner>Тестовый режим: {testParts.join(', ')}.</TestBanner> : null}
 
       <SectionTitle>Приложение</SectionTitle>
@@ -56,11 +59,12 @@ export default function Settings() {
         <Row icon="trash-outline" title="Отозвать согласие и удалить данные" onPress={revoke} danger last />
       </View>
       <T size={12} color={colors.muted} style={{ textAlign: 'center', marginTop: 8 }}>ToyTime 1.0 · MVP</T>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  group: { backgroundColor: '#fff', borderRadius: radius.lg, overflow: 'hidden', marginBottom: 18, ...shadow, shadowOpacity: 0.04 },
-  safe: { flexDirection: 'row', gap: 14, alignItems: 'center', backgroundColor: colors.greenLight, borderRadius: radius.lg, padding: 16, marginBottom: 18 },
+  group: { backgroundColor: '#fff', borderRadius: radius.lg, overflow: 'hidden', marginBottom: 18, borderWidth: 1, borderColor: colors.border },
+  safe: { flexDirection: 'row', gap: 14, alignItems: 'center', backgroundColor: colors.goldLight, borderRadius: radius.lg, padding: 16, marginBottom: 18 },
 });

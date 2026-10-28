@@ -13,10 +13,10 @@ export function T({ weight = 'regular', size = 15, color = colors.text, style, .
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, style, icon, size = 'lg' }: {
-  title: string; onPress: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost' | 'light'; disabled?: boolean; loading?: boolean;
+  title: string; onPress: () => void; variant?: 'primary' | 'outline' | 'danger' | 'ghost' | 'light' | 'lime'; disabled?: boolean; loading?: boolean;
   style?: ViewStyle; icon?: IconName; size?: 'lg' | 'md';
 }) {
-  const fg = { primary: '#fff', outline: colors.green, danger: colors.red, ghost: colors.green, light: colors.green }[variant];
+  const fg = { primary: '#fff', outline: colors.green, danger: colors.red, ghost: colors.green, light: colors.green, lime: colors.green }[variant];
   return (
     <Pressable
       accessibilityRole="button"
@@ -41,17 +41,17 @@ export function Card({ children, style }: { children: ReactNode; style?: ViewSty
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
+export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode | string }) {
   return (
     <View style={styles.sectionRow}>
-      <T weight="bold" size={13} color={colors.muted} style={{ letterSpacing: 0.6, textTransform: 'uppercase' }}>{children}</T>
-      {right}
+      <T weight="extrabold" size={18} style={{ letterSpacing: -0.3 }}>{children}</T>
+      {typeof right === 'string' ? <T size={12} color={colors.muted}>{right}</T> : right}
     </View>
   );
 }
 
 export function Label({ children }: { children: ReactNode }) {
-  return <T weight="semibold" size={14} color={colors.textSoft} style={{ marginBottom: 8 }}>{children}</T>;
+  return <T weight="bold" size={12} color={colors.muted} style={{ marginBottom: 6 }}>{children}</T>;
 }
 
 export function Field({ label, counter, icon, ...props }: TextInputProps & { label?: string; counter?: boolean; icon?: IconName }) {
@@ -84,8 +84,8 @@ export function ErrorText({ children }: { children: ReactNode }) {
 export function TestBanner({ children }: { children: ReactNode }) {
   return (
     <View style={styles.banner}>
-      <Ionicons name="flask-outline" size={18} color={colors.amber} />
-      <T size={13} color="#7A5410" style={{ flex: 1 }}>{children}</T>
+      <Ionicons name="information-circle-outline" size={18} color="#53663A" />
+      <T size={12} color="#53663A" style={{ flex: 1 }}>{children}</T>
     </View>
   );
 }
@@ -101,8 +101,8 @@ export function IconTile({ name, color = colors.green, bg = colors.greenLight, s
 export function Avatar({ name, size = 42 }: { name: string; size?: number }) {
   const [bg, fg] = avatarColors(name);
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
-      <T weight="bold" size={size * 0.36} color={fg}>{initials(name)}</T>
+    <View style={{ width: size, height: size, borderRadius: size * 0.35, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <T weight="extrabold" size={size * 0.36} color={fg}>{initials(name)}</T>
     </View>
   );
 }
@@ -111,7 +111,7 @@ export function Pill({ label, color, bg, icon }: { label: string; color: string;
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
       {icon ? <Ionicons name={icon} size={13} color={color} /> : null}
-      <T weight="semibold" size={12} color={color}>{label}</T>
+      <T weight="bold" size={11} color={color}>{label}</T>
     </View>
   );
 }
@@ -154,21 +154,22 @@ export function Row({ icon, title, value, onPress, danger, last }: { icon: IconN
 }
 
 const styles = StyleSheet.create({
-  button: { borderRadius: radius.md, paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', minHeight: 56 },
+  button: { borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', minHeight: 52 },
   buttonMd: { minHeight: 46, paddingVertical: 11, paddingHorizontal: 16 },
   buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  primary: { backgroundColor: colors.green, ...shadow, shadowOpacity: 0.18 },
-  outline: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.green },
-  danger: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#EBC3BB' },
+  primary: { backgroundColor: colors.green },
+  outline: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },
+  danger: { backgroundColor: '#FFF0EE' },
   ghost: { backgroundColor: 'transparent' },
-  light: { backgroundColor: colors.greenLight },
+  light: { backgroundColor: colors.greenSoft },
+  lime: { backgroundColor: colors.lime },
   disabled: { opacity: 0.45 },
-  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 18, marginBottom: 14, ...shadow },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 6 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: 14, backgroundColor: '#fff' },
-  input: { flex: 1, paddingVertical: 14, fontSize: 16, color: colors.text, fontFamily: font.medium, outlineStyle: 'none' } as unknown as TextStyle,
+  card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border, ...shadow },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 8, marginHorizontal: 1 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#DCE4DD', borderRadius: radius.sm, paddingHorizontal: 14, backgroundColor: '#fff' },
+  input: { flex: 1, paddingVertical: 12, fontSize: 15, color: colors.text, fontFamily: font.medium, outlineStyle: 'none' } as unknown as TextStyle,
   error: { flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: colors.redLight, borderRadius: radius.sm, padding: 12, marginVertical: 10 },
-  banner: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: colors.amberLight, borderRadius: radius.md, padding: 12, marginBottom: 14 },
+  banner: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: colors.goldLight, borderRadius: radius.md, padding: 12, marginBottom: 14 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, alignSelf: 'flex-start' },
   bar: { flexDirection: 'row', borderRadius: 99, overflow: 'hidden', backgroundColor: '#E6ECE8' },
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },

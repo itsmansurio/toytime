@@ -1,23 +1,27 @@
+// Палитра по макету заказчика: тёмно-зелёный + салатовый акцент.
 export const colors = {
-  green: '#0F5C3A',
-  greenDark: '#0A3F28',
-  greenMid: '#1E7A50',
-  greenLight: '#E7F2EB',
-  greenSoft: '#F1F7F3',
-  gold: '#C9A24B',
-  goldLight: '#F7EED8',
-  bg: '#F5F7F5',
+  green: '#123C32',
+  greenDark: '#0C2B24',
+  greenMid: '#1D6A54',
+  greenLight: '#EAF2E9',
+  greenSoft: '#EDF2EE',
+  lime: '#D8F27B',
+  gold: '#D8F27B',
+  goldLight: '#F1F6E6',
+  bg: '#F5F7F4',
   card: '#FFFFFF',
-  text: '#16231D',
-  textSoft: '#3B4A43',
-  muted: '#7A8A82',
-  border: '#E3E9E5',
-  red: '#C2412D',
-  redLight: '#FBEAE6',
-  amber: '#B7791F',
-  amberLight: '#FDF3E1',
+  text: '#17231F',
+  textSoft: '#3E4C45',
+  muted: '#738078',
+  border: '#E5EAE5',
+  red: '#B94B43',
+  redLight: '#FFEBE8',
+  amber: '#8B6316',
+  amberLight: '#FFF3D8',
+  yes: '#267143',
+  yesLight: '#E3F5E8',
   grey: '#8A9690',
-  greyLight: '#EEF1EF',
+  greyLight: '#F5F7F4',
 };
 
 export const font = {
@@ -28,19 +32,19 @@ export const font = {
   extrabold: 'Manrope_800ExtraBold',
 };
 
-export const radius = { sm: 10, md: 14, lg: 20, xl: 28 };
+export const radius = { sm: 11, md: 12, lg: 18, xl: 25 };
 
 export const shadow = {
-  shadowColor: '#0B2E1E',
-  shadowOpacity: 0.07,
-  shadowRadius: 14,
-  shadowOffset: { width: 0, height: 4 },
-  elevation: 2,
+  shadowColor: '#17231F',
+  shadowOpacity: 0.03,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 1,
 };
 
 // Цвет аватара по имени гостя, чтобы список не был однотонным.
 const AVATAR = [
-  ['#E7F2EB', '#0F5C3A'], ['#F7EED8', '#8A6A1F'], ['#E6EEF8', '#2D5A8C'],
+  ['#E9F1E8', '#123C32'], ['#F1F6E6', '#53663A'], ['#E6EEF8', '#2D5A8C'],
   ['#F6E7EE', '#8C2D5A'], ['#EDE8F7', '#4F3A8C'], ['#E3F3F3', '#1F6B6B'],
 ];
 export function avatarColors(name: string) {

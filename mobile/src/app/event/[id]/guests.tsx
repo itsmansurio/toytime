@@ -3,14 +3,14 @@ import { Alert, FlatList, Platform, Pressable, StyleSheet, TextInput, View } fro
 import { router, useLocalSearchParams } from 'expo-router';
 import { api, type Guest, type Rsvp } from '../../../lib/api';
 import { useRefresh } from '../../../lib/useRefresh';
-import { colors, font, radius, shadow } from '../../../lib/theme';
+import { colors, font, radius } from '../../../lib/theme';
 import { formatPhone } from '../../../lib/phone';
 import { Avatar, Button, EmptyState, ErrorText, Ionicons, Pill, T, type IconName } from '../../../components/ui';
 
 const RSVP: Record<Rsvp, { label: string; color: string; bg: string; icon: IconName }> = {
-  yes: { label: 'Придёт', color: colors.green, bg: colors.greenLight, icon: 'checkmark' },
+  yes: { label: 'Придёт', color: colors.yes, bg: colors.yesLight, icon: 'checkmark' },
   no: { label: 'Не придёт', color: colors.red, bg: colors.redLight, icon: 'close' },
-  pending: { label: 'Ждём ответа', color: colors.grey, bg: colors.greyLight, icon: 'time-outline' },
+  pending: { label: 'Не ответил', color: colors.amber, bg: colors.amberLight, icon: 'time-outline' },
 };
 const DELIVERY: Record<string, [string, IconName]> = {
   queued: ['В очереди', 'hourglass-outline'], sending: ['Отправляется', 'paper-plane-outline'], sent: ['Отправлено', 'checkmark'],
@@ -68,7 +68,7 @@ export default function Guests() {
                 <T size={12} color={colors.muted}>Отметить в телефонной книге</T>
               </Pressable>
               <Pressable style={styles.addCard} onPress={() => router.push(`/event/${id}/manual`)}>
-                <View style={[styles.addIcon, { backgroundColor: colors.gold }]}><Ionicons name="keypad" size={20} color="#fff" /></View>
+                <View style={[styles.addIcon, { backgroundColor: colors.lime }]}><Ionicons name="keypad" size={20} color={colors.green} /></View>
                 <T weight="bold" size={14}>Вручную</T>
                 <T size={12} color={colors.muted}>Ввести имя и номер</T>
               </Pressable>
@@ -138,14 +138,14 @@ export default function Guests() {
 
 const styles = StyleSheet.create({
   addRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  addCard: { flex: 1, backgroundColor: '#fff', borderRadius: radius.lg, padding: 14, gap: 4, ...shadow, shadowOpacity: 0.05 },
+  addCard: { flex: 1, backgroundColor: '#fff', borderRadius: radius.lg, padding: 14, gap: 4, borderWidth: 1, borderColor: colors.border },
   addIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderRadius: radius.md, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.border },
   searchInput: { flex: 1, paddingVertical: 12, fontSize: 15, fontFamily: font.medium, color: colors.text, outlineStyle: 'none' } as object,
   filters: { flexDirection: 'row', gap: 8, marginTop: 12, marginBottom: 12, flexWrap: 'wrap' },
   filter: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },
   filterOn: { backgroundColor: colors.green, borderColor: colors.green },
-  guest: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', padding: 14, borderRadius: radius.md, marginBottom: 8, ...shadow, shadowOpacity: 0.04 },
+  guest: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', padding: 14, borderRadius: radius.lg, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   delivery: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   bottom: { position: 'absolute', left: 16, right: 16, bottom: 24 },
 });

@@ -3,9 +3,9 @@ import { colors, radius } from '../lib/theme';
 import { Ionicons, T, type IconName } from './ui';
 
 const TILES: { key: 'yes' | 'no' | 'pending'; label: string; icon: IconName; color: string; bg: string }[] = [
-  { key: 'yes', label: 'Придут', icon: 'checkmark-circle', color: colors.green, bg: colors.greenLight },
-  { key: 'no', label: 'Не придут', icon: 'close-circle', color: colors.red, bg: colors.redLight },
-  { key: 'pending', label: 'Не ответили', icon: 'time', color: colors.grey, bg: colors.greyLight },
+  { key: 'yes', label: 'Придут', icon: 'checkmark-circle', color: colors.yes, bg: colors.bg },
+  { key: 'no', label: 'Не смогут', icon: 'close-circle', color: colors.red, bg: colors.bg },
+  { key: 'pending', label: 'Не ответили', icon: 'time', color: colors.amber, bg: colors.bg },
 ];
 
 export function StatTiles({ yes, no, pending }: { yes: number; no: number; pending: number }) {
@@ -14,9 +14,11 @@ export function StatTiles({ yes, no, pending }: { yes: number; no: number; pendi
     <View style={styles.row}>
       {TILES.map((t) => (
         <View key={t.key} style={[styles.tile, { backgroundColor: t.bg }]}>
-          <Ionicons name={t.icon} size={20} color={t.color} />
-          <T weight="extrabold" size={28} color={t.color} style={{ marginTop: 6 }}>{values[t.key]}</T>
-          <T weight="semibold" size={12} color={colors.textSoft}>{t.label}</T>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <T weight="extrabold" size={22} style={{ letterSpacing: -0.5 }}>{values[t.key]}</T>
+            <Ionicons name={t.icon} size={16} color={t.color} />
+          </View>
+          <T size={11} color={colors.muted}>{t.label}</T>
         </View>
       ))}
     </View>
@@ -24,6 +26,6 @@ export function StatTiles({ yes, no, pending }: { yes: number; no: number; pendi
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 10 },
-  tile: { flex: 1, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 12 },
+  row: { flexDirection: 'row', gap: 8 },
+  tile: { flex: 1, borderRadius: radius.md, paddingVertical: 11, paddingHorizontal: 10 },
 });

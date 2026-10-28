@@ -472,13 +472,13 @@ export function createApp(ctx) {
       '<meta name="mobile-web-app-capable" content="yes">',
       '<meta name="apple-mobile-web-app-title" content="ToyTime">',
       '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
-      '<meta name="theme-color" content="#0F5C3A">',
+      '<meta name="theme-color" content="#123C32">',
     ].join('');
     const indexHtml = fs.readFileSync(path.join(webDir, 'index.html'), 'utf8').replace('</head>', `${pwaTags}</head>`);
     const staticDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'static');
     app.get('/manifest.webmanifest', (req, res) => res.type('application/manifest+json').json({
       name: 'ToyTime', short_name: 'ToyTime', start_url: '/', display: 'standalone',
-      background_color: '#F4F7F5', theme_color: '#0F5C3A', lang: 'ru',
+      background_color: '#F5F7F4', theme_color: '#123C32', lang: 'ru',
       icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
     }));
     app.use(express.static(staticDir, { index: false }));

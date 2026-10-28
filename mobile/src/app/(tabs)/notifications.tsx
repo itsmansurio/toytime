@@ -3,13 +3,14 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { api, type NotificationItem } from '../../lib/api';
 import { useRefresh } from '../../lib/useRefresh';
-import { colors, radius, shadow } from '../../lib/theme';
+import { colors, radius } from '../../lib/theme';
 import { EmptyState, ErrorText, IconTile, T, type IconName } from '../../components/ui';
+import { TopHeader } from '../../components/TopHeader';
 
 function kind(text: string): { icon: IconName; color: string; bg: string } {
   if (text.includes(' не сможет прийти')) return { icon: 'close', color: colors.red, bg: colors.redLight };
   if (text.includes(' придёт')) return { icon: 'checkmark', color: colors.green, bg: colors.greenLight };
-  if (text.startsWith('Оплата')) return { icon: 'card', color: colors.gold, bg: colors.goldLight };
+  if (text.startsWith('Оплата')) return { icon: 'card', color: '#53663A', bg: colors.goldLight };
   return { icon: 'alert', color: colors.amber, bg: colors.amberLight };
 }
 
@@ -40,19 +41,19 @@ export default function Notifications() {
   useFocusEffect(useCallback(() => () => { api.markNotificationsRead().catch(() => {}); }, []));
   return (
     <FlatList
-      contentContainerStyle={{ padding: 16, paddingTop: 4, flexGrow: 1 }}
+      contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
       data={data ?? []}
       keyExtractor={(n) => String(n.id)}
-      ListHeaderComponent={<ErrorText>{error}</ErrorText>}
+      ListHeaderComponent={<><TopHeader title="Уведомления" subtitle="Ответы гостей, оплата и статусы рассылки." /><View style={{ paddingHorizontal: 16, paddingTop: 16 }}><ErrorText>{error}</ErrorText></View></>}
       ListEmptyComponent={loading ? undefined : (
         <EmptyState icon="notifications-outline" title="Пока тихо" text="Здесь появятся ответы гостей, подтверждения оплаты и статусы рассылки." />
       )}
-      renderItem={({ item }) => <Item item={item} />}
+      renderItem={({ item }) => <View style={{ paddingHorizontal: 16 }}><Item item={item} /></View>}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  item: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: radius.md, marginBottom: 10, ...shadow, shadowOpacity: 0.04 },
+  item: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: radius.lg, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   unread: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.green },
 });
