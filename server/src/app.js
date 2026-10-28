@@ -1,4 +1,7 @@
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { HttpError, normalizePhone, parseGuestToken, phoneHash, randomToken, sha256 } from './util.js';
 import { verifyWebhookSignature } from './integrations/whatsapp.js';
 import { verifyPaymentWebhook } from './integrations/payments.js';
@@ -448,6 +451,13 @@ export function createApp(ctx) {
 
   if (whatsapp.testMode) {
     app.get('/test/whatsapp', adminAuth, (req, res) => res.type('html').send(outboxPage(whatsapp.outbox)));
+  }
+
+  // Веб-версия приложения (собирается из mobile/ в server/public) для показа по ссылке.
+  const webDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
+  if (fs.existsSync(path.join(webDir, 'index.html'))) {
+    app.use(express.static(webDir, { index: false }));
+    app.get(/^\/(?!api\/|webhooks\/|admin\/|test\/|r\/).*/, (req, res) => res.sendFile(path.join(webDir, 'index.html')));
   }
 
   app.use((req, res) => res.status(404).json({ error: 'Не найдено' }));

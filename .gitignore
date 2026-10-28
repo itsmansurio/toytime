@@ -8,3 +8,4 @@ mobile/ios/
 mobile/android/
 .DS_Store
 demo-data/
+server/public/

@@ -11,7 +11,7 @@ export function loadConfig(overrides = {}) {
   const config = {
     port: Number(env.PORT || 3000),
     databaseUrl: env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/toytime',
-    publicUrl: (env.PUBLIC_URL || 'http://localhost:3000').replace(/\/$/, ''),
+    publicUrl: (env.PUBLIC_URL || env.RENDER_EXTERNAL_URL || 'http://localhost:3000').replace(/\/$/, ''),
     // Секрет для подписи ссылок гостей и хэширования телефонов.
     linkSecret: env.LINK_SECRET || 'dev-only-secret-change-me',
     corsOrigin: env.CORS_ORIGIN || '',

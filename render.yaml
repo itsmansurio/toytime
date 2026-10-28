@@ -1,0 +1,37 @@
+# Выкладка на Render: Blueprint создаёт сервер и базу PostgreSQL.
+# WhatsApp и оплата остаются в тестовом режиме.
+services:
+  - type: web
+    name: toytime
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: >-
+      cd server && npm ci &&
+      cd ../mobile && npm ci && EXPO_PUBLIC_API_URL=$RENDER_EXTERNAL_URL npx expo export --platform web --output-dir ../server/public
+    startCommand: cd server && npm run migrate && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: toytime-db
+          property: connectionString
+      - key: LINK_SECRET
+        generateValue: true
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: PAYMENTS_WEBHOOK_SECRET
+        generateValue: true
+      - key: WHATSAPP_TEST_MODE
+        value: "true"
+      - key: PAYMENTS_TEST_MODE
+        value: "true"
+      - key: PUSH_TEST_MODE
+        value: "true"
+
+databases:
+  - name: toytime-db
+    plan: free
+    region: frankfurt

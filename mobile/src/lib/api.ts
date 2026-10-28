@@ -1,7 +1,11 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+// Веб-версия, выложенная вместе с сервером, обращается к тому же адресу, с которого открыта.
+const sameOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && !window.location.port ? window.location.origin : null;
 
 export const API_URL: string =
-  process.env.EXPO_PUBLIC_API_URL || (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl || 'http://localhost:3000';
+  process.env.EXPO_PUBLIC_API_URL || sameOrigin || (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl || 'http://localhost:3000';
 
 export type Rsvp = 'pending' | 'yes' | 'no';
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid';
