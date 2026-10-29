@@ -549,8 +549,12 @@ export function createApp(ctx) {
   // ---------- Тестовый режим и журнал ----------
 
   const adminAuth = (req, res, next) => {
-    const token = (req.get('authorization') || '').replace(/^Bearer /, '') || req.query.token;
-    if (token !== config.adminToken) return res.sendStatus(401);
+    // Токен, сгенерированный Render, может содержать «+»: в адресной строке он превращается в пробел.
+    const raw = (req.get('authorization') || '').replace(/^Bearer /, '') || String(req.query.token ?? '');
+    const token = raw.trim().replace(/ /g, '+');
+    if (!token || token !== config.adminToken.trim()) {
+      return res.status(401).type('html').send('<meta charset="utf-8"><p style="font:16px sans-serif;padding:24px">Неверный токен. Скопируйте ADMIN_TOKEN из Render → toytime → Environment и добавьте в конец ссылки: <code>/test/whatsapp?token=…</code></p>');
+    }
     next();
   };
 

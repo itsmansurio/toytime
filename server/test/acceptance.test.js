@@ -525,3 +525,13 @@ test('тестовый режим: напоминание можно отпра�
   const sent = env.ctx.whatsapp.outbox.slice(before).map((m) => m.to).sort();
   assert.deepEqual(sent, ['+77081111111', '+77082222222']);
 });
+
+test('токен администратора с «+» работает и в адресной строке', async () => {
+  const saved = env.config.adminToken;
+  env.config.adminToken = 'ab+cd/ef==';
+  try {
+    assert.equal((await env.api.get('/test/whatsapp?token=ab+cd/ef==')).status, 200);
+    assert.equal((await env.api.get('/test/whatsapp?token=ab%2Bcd%2Fef%3D%3D')).status, 200);
+    assert.equal((await env.api.get('/test/whatsapp?token=wrong')).status, 401);
+  } finally { env.config.adminToken = saved; }
+});
