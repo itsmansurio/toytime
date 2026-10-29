@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import { Animated, StyleSheet, View } from 'react-native';
 import { colors, themed } from '../lib/theme';
 import { T } from './ui';
+import { t } from '../lib/i18n';
 
 // Короткое сообщение снизу, как в макете («Мероприятие сохранено»).
 const ToastContext = createContext<(text: string) => void>(() => {});

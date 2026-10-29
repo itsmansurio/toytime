@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import { colors, font, shadow } from '../../lib/theme';
 import { useTheme } from '../../lib/themeContext';
 import { Icon, type IconName } from '../../components/Icon';
+import { t } from '../../lib/i18n';
 
 type IconProps = { focused: boolean; color: import('react-native').ColorValue };
 const icon = (name: IconName) => ({ focused, color }: IconProps) => <Icon name={name} size={20} color={color as string} strokeWidth={focused ? 2.5 : 2} />;
@@ -29,10 +30,10 @@ export default function TabsLayout() {
         animation: 'shift',
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Главная', tabBarIcon: icon('home') }} />
-      <Tabs.Screen name="event" options={{ title: 'Мероприятие', tabBarIcon: icon('add') }} />
-      <Tabs.Screen name="guests" options={{ title: 'Гости', tabBarIcon: icon('people') }} />
-      <Tabs.Screen name="payment" options={{ title: 'Оплата', tabBarIcon: tenge }} />
+      <Tabs.Screen name="index" options={{ title: t('Главная'), tabBarIcon: icon('home') }} />
+      <Tabs.Screen name="event" options={{ title: t('Мероприятие'), tabBarIcon: icon('add') }} />
+      <Tabs.Screen name="guests" options={{ title: t('Гости'), tabBarIcon: icon('people') }} />
+      <Tabs.Screen name="payment" options={{ title: t('Оплата'), tabBarIcon: tenge }} />
       <Tabs.Screen name="send" options={HIDDEN} />
       <Tabs.Screen name="notifications" options={HIDDEN} />
       <Tabs.Screen name="settings" options={HIDDEN} />

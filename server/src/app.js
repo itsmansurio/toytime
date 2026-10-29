@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { HttpError, guestToken, normalizePhone, parseGuestToken, phoneHash, randomToken, sha256 } from './util.js';
+import { HttpError, guestToken, mediaToken, normalizePhone, parseGuestToken, parseMediaToken, phoneHash, randomToken, sha256 } from './util.js';
 import { verifyWebhookSignature } from './integrations/whatsapp.js';
 import { verifyPaymentWebhook } from './integrations/payments.js';
 import { calendarFile, notFoundPage, outboxPage, privacyPage, rsvpPage, testCheckoutPage } from './views/pages.js';
@@ -57,6 +57,17 @@ function validateEvent(body, config, { partial = false } = {}) {
     if (value.length > 80) throw new HttpError(400, 'Имя хозяина длиннее 80 символов');
     out.host_name = value || null;
   }
+  if (body.host_phone !== undefined || !partial) {
+    const value = String(body.host_phone ?? '').trim();
+    if (!value) throw new HttpError(400, 'Укажите номер телефона хозяина');
+    const phone = normalizePhone(value);
+    if (!phone) throw new HttpError(400, 'Неверный номер телефона хозяина');
+    out.host_phone = phone;
+  }
+  if (body.lang !== undefined) {
+    if (!['ru', 'kk'].includes(body.lang)) throw new HttpError(400, 'Язык приглашения: ru или kk');
+    out.lang = body.lang;
+  }
   if (body.reminders_enabled !== undefined) out.reminders_enabled = Boolean(body.reminders_enabled);
   if (body.first_reminder_days !== undefined) {
     if (![7, 10].includes(Number(body.first_reminder_days))) throw new HttpError(400, 'Первое напоминание: за 7 или 10 дней');
@@ -81,7 +92,7 @@ export function createApp(ctx) {
         'Access-Control-Allow-Origin': config.corsOrigin === '*' ? (req.get('origin') || '*') : config.corsOrigin,
         Vary: 'Origin',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE',
       });
       if (req.method === 'OPTIONS') return res.sendStatus(204);
       next();
@@ -158,14 +169,26 @@ export function createApp(ctx) {
       (SELECT count(*) FROM guests g WHERE g.event_id = e.id)::int AS guests_total,
       (SELECT count(*) FROM guests g WHERE g.event_id = e.id AND g.rsvp = 'yes')::int AS guests_yes,
       (SELECT count(*) FROM guests g WHERE g.event_id = e.id AND g.rsvp = 'no')::int AS guests_no,
-      (SELECT count(*) FROM guests g WHERE g.event_id = e.id AND g.rsvp = 'pending')::int AS guests_pending
-    FROM events e`;
+      (SELECT count(*) FROM guests g WHERE g.event_id = e.id AND g.rsvp = 'pending')::int AS guests_pending,
+      em.mime AS media_mime, em.size AS media_size, em.updated_at AS media_updated_at
+    FROM events e LEFT JOIN event_media em ON em.event_id = e.id`;
+
+  // Фото или видео приглашения: что показывать в приложении и на странице гостя.
+  function mediaJson(e, eventId = e.id) {
+    if (!e.media_mime) return null;
+    return {
+      type: e.media_mime.startsWith('video/') ? 'video' : 'image',
+      mime: e.media_mime, size: e.media_size,
+      url: `${config.publicUrl}/media/${mediaToken(config.linkSecret, eventId, e.media_updated_at)}`,
+    };
+  }
 
   function eventJson(e) {
     return {
       id: e.id, title: e.title, eventDate: e.event_date, eventTime: e.event_time, startsAt: e.starts_at,
       address: e.address, invitationText: e.invitation_text, firstReminderDays: e.first_reminder_days,
-      hostName: e.host_name, remindersEnabled: e.reminders_enabled,
+      hostName: e.host_name, hostPhone: e.host_phone, lang: e.lang, remindersEnabled: e.reminders_enabled,
+      media: e.media_mime === undefined ? undefined : mediaJson(e),
       paymentStatus: e.payment_status, invitesSentAt: e.invites_sent_at,
       stats: e.guests_total === undefined ? undefined : { total: e.guests_total, yes: e.guests_yes, no: e.guests_no, pending: e.guests_pending },
     };
@@ -181,12 +204,13 @@ export function createApp(ctx) {
     const startsAt = new Date(`${data.event_date}T${data.event_time}:00${config.utcOffset}`);
     if (startsAt <= new Date()) throw new HttpError(400, 'Дата мероприятия должна быть в будущем');
     const { rows } = await pool.query(
-      `INSERT INTO events (organizer_id, title, event_date, event_time, starts_at, address, invitation_text, first_reminder_days, host_name, reminders_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      `INSERT INTO events (organizer_id, title, event_date, event_time, starts_at, address, invitation_text, first_reminder_days, host_name, reminders_enabled,
+         host_phone, lang)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [req.organizer.id, data.title, data.event_date, data.event_time, startsAt, data.address, data.invitation_text, data.first_reminder_days ?? 7,
-        data.host_name ?? null, data.reminders_enabled ?? true],
+        data.host_name ?? null, data.reminders_enabled ?? true, data.host_phone, data.lang ?? 'ru'],
     );
-    res.status(201).json(eventJson(rows[0]));
+    res.status(201).json(eventJson({ ...rows[0], media_mime: null }));
   }));
 
   app.get('/api/events/:id', auth, asyncRoute(async (req, res) => {
@@ -201,14 +225,60 @@ export function createApp(ctx) {
     const event = await loadEvent(req);
     const data = { ...event, ...validateEvent(req.body, config, { partial: true }) };
     const startsAt = new Date(`${data.event_date}T${data.event_time}:00${config.utcOffset}`);
-    const { rows } = await pool.query(
+    await pool.query(
       `UPDATE events SET title = $2, event_date = $3, event_time = $4, starts_at = $5, address = $6, invitation_text = $7, first_reminder_days = $8,
-         host_name = $9, reminders_enabled = $10
-       WHERE id = $1 RETURNING *`,
+         host_name = $9, reminders_enabled = $10, host_phone = $11, lang = $12
+       WHERE id = $1`,
       [event.id, data.title, data.event_date, data.event_time, startsAt, data.address, data.invitation_text, data.first_reminder_days,
-        data.host_name, data.reminders_enabled],
+        data.host_name, data.reminders_enabled, data.host_phone, data.lang],
     );
+    const { rows } = await pool.query(`${STATS_SQL} WHERE e.id = $1`, [event.id]);
     res.json(eventJson(rows[0]));
+  }));
+
+  // Фото или видео приглашения. Тело запроса — сам файл, тип в Content-Type.
+  // Ограничения WhatsApp: фото JPEG/PNG до 5 МБ, видео MP4/3GP до 16 МБ.
+  const MEDIA_LIMITS = { 'image/jpeg': 5, 'image/png': 5, 'video/mp4': 16, 'video/3gpp': 16 };
+  app.put('/api/events/:id/media', auth, express.raw({ type: () => true, limit: '17mb' }), asyncRoute(async (req, res) => {
+    const event = await loadEvent(req);
+    const mime = (req.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!MEDIA_LIMITS[mime]) throw new HttpError(415, 'Подходят фото JPEG/PNG или видео MP4');
+    const size = req.body?.length ?? 0;
+    if (!size) throw new HttpError(400, 'Файл пустой');
+    if (size > MEDIA_LIMITS[mime] * 1024 * 1024) throw new HttpError(413, `Файл больше ${MEDIA_LIMITS[mime]} МБ`);
+    await pool.query(
+      `INSERT INTO event_media (event_id, mime, size, data) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (event_id) DO UPDATE SET mime = $2, size = $3, data = $4, updated_at = now()`,
+      [event.id, mime, size, req.body],
+    );
+    const { rows } = await pool.query(`${STATS_SQL} WHERE e.id = $1`, [event.id]);
+    res.json(eventJson(rows[0]));
+  }));
+
+  app.delete('/api/events/:id/media', auth, asyncRoute(async (req, res) => {
+    const event = await loadEvent(req);
+    await pool.query('DELETE FROM event_media WHERE event_id = $1', [event.id]);
+    res.json({ deleted: true });
+  }));
+
+  // Файл по подписанной ссылке: его забирает WhatsApp и показывает страница гостя.
+  // Поддержка Range нужна, чтобы видео играло в Safari на iPhone.
+  app.get('/media/:token', asyncRoute(async (req, res) => {
+    const parsed = parseMediaToken(config.linkSecret, req.params.token);
+    if (!parsed) return res.sendStatus(404);
+    const { rows } = await pool.query('SELECT mime, size, data, updated_at FROM event_media WHERE event_id = $1', [parsed.eventId]);
+    const media = rows[0];
+    if (!media || new Date(media.updated_at).getTime().toString(36) !== parsed.version) return res.sendStatus(404);
+    res.set({ 'Content-Type': media.mime, 'Accept-Ranges': 'bytes', 'Cache-Control': 'private, max-age=86400', 'X-Robots-Tag': 'noindex' });
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.get('range') || '');
+    if (range && (range[1] || range[2])) {
+      const start = range[1] ? Number(range[1]) : Math.max(0, media.size - Number(range[2]));
+      const end = range[1] && range[2] ? Math.min(Number(range[2]), media.size - 1) : media.size - 1;
+      if (start >= media.size || start > end) return res.status(416).set('Content-Range', `bytes */${media.size}`).end();
+      res.status(206).set('Content-Range', `bytes ${start}-${end}/${media.size}`);
+      return res.send(media.data.subarray(start, end + 1));
+    }
+    res.send(media.data);
   }));
 
   app.delete('/api/events/:id', auth, asyncRoute(async (req, res) => {
@@ -418,9 +488,10 @@ export function createApp(ctx) {
     const guestId = parseGuestToken(config.linkSecret, token);
     if (!guestId) return null;
     const { rows } = await pool.query(
-      `SELECT g.*, e.title, e.event_date, e.event_time, e.starts_at, e.address, e.invitation_text, e.host_name, e.organizer_id
-       FROM guests g JOIN events e ON e.id = g.event_id WHERE g.id = $1`, [guestId]);
-    return rows[0] || null;
+      `SELECT g.*, e.title, e.event_date, e.event_time, e.starts_at, e.address, e.invitation_text, e.host_name, e.host_phone, e.lang, e.organizer_id,
+              em.mime AS media_mime, em.size AS media_size, em.updated_at AS media_updated_at
+       FROM guests g JOIN events e ON e.id = g.event_id LEFT JOIN event_media em ON em.event_id = e.id WHERE g.id = $1`, [guestId]);
+    return rows[0] ? { ...rows[0], media: mediaJson(rows[0], rows[0].event_id) } : null;
   }
 
   async function isOptedOut(phone) {
@@ -447,9 +518,11 @@ export function createApp(ctx) {
     if (!['yes', 'no'].includes(answer)) throw new HttpError(400, 'Неверный ответ');
     if (row.rsvp !== answer) {
       await pool.query("UPDATE guests SET rsvp = $2, responded_at = now(), rsvp_source = 'guest' WHERE id = $1", [row.id, answer]);
-      // Уже запланированные напоминания этому гостю не уйдут.
-      await pool.query(`UPDATE messages SET status = 'skipped', last_error = 'Гость уже ответил', updated_at = now()
-                        WHERE guest_id = $1 AND kind <> 'invite' AND status = 'queued'`, [row.id]);
+      // Отказавшемуся уже запланированные напоминания не уйдут. Ответившим «Приду» напоминания приходят.
+      if (answer === 'no') {
+        await pool.query(`UPDATE messages SET status = 'skipped', last_error = 'Гость ответил «Не смогу»', updated_at = now()
+                          WHERE guest_id = $1 AND kind <> 'invite' AND status = 'queued'`, [row.id]);
+      }
       const verb = answer === 'yes' ? 'придёт' : 'не сможет прийти';
       await notify(row.organizer_id, row.event_id, `${row.name} ${verb} на «${row.title}»`);
     }
@@ -531,7 +604,7 @@ export function createApp(ctx) {
     }));
     app.use(express.static(staticDir, { index: false }));
     app.use(express.static(webDir, { index: false }));
-    app.get(/^\/(?!api\/|webhooks\/|admin\/|test\/|r\/).*/, (req, res) => res.type('html').send(indexHtml));
+    app.get(/^\/(?!api\/|webhooks\/|admin\/|test\/|r\/|media\/).*/, (req, res) => res.type('html').send(indexHtml));
   }
 
   app.use((req, res) => res.status(404).json({ error: 'Не найдено' }));

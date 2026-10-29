@@ -10,6 +10,8 @@ export const API_URL: string =
 export type Rsvp = 'pending' | 'yes' | 'no';
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid';
 
+export type InviteLang = 'ru' | 'kk';
+export interface EventMedia { type: 'image' | 'video'; mime: string; size: number; url: string }
 export interface EventStats { total: number; yes: number; no: number; pending: number }
 export interface EventItem {
   id: string;
@@ -21,6 +23,9 @@ export interface EventItem {
   invitationText: string;
   firstReminderDays: 7 | 10;
   hostName: string | null;
+  hostPhone: string | null;
+  lang: InviteLang;
+  media?: EventMedia | null;
   remindersEnabled: boolean;
   paymentStatus: PaymentStatus;
   invitesSentAt: string | null;
@@ -29,7 +34,7 @@ export interface EventItem {
 }
 export interface EventInput {
   title: string; event_date: string; event_time: string; address: string; invitation_text: string;
-  first_reminder_days: number; host_name?: string | null; reminders_enabled?: boolean;
+  first_reminder_days: number; host_name?: string | null; host_phone: string; lang?: InviteLang; reminders_enabled?: boolean;
 }
 export interface Guest {
   id: string;
@@ -60,23 +65,27 @@ let onUnauthorized: (() => void) | null = null;
 export function setToken(value: string | null) { token = value; }
 export function setUnauthorizedHandler(fn: () => void) { onUnauthorized = fn; }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+// Сообщения об ошибках сервера переводятся на язык приложения.
+let translateError: (message: string) => string = (m) => m;
+export function setErrorTranslator(fn: (message: string) => string) { translateError = fn; }
+
+async function request<T>(method: string, path: string, body?: unknown, raw?: { blob: Blob; type: string }): Promise<T> {
   let res: Response;
   try {
     res = await fetch(API_URL + path, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': raw ? raw.type : 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: raw ? raw.blob : body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, 'Нет связи с сервером. Проверьте интернет.');
+    throw new ApiError(0, translateError('Нет связи с сервером. Проверьте интернет.'));
   }
   const json = await res.json().catch(() => ({}));
   if (res.status === 401 && token) onUnauthorized?.();
-  if (!res.ok) throw new ApiError(res.status, json.error || `Ошибка ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status, translateError(json.error || `Ошибка ${res.status}`));
   return json as T;
 }
 
@@ -90,6 +99,8 @@ export const api = {
   createEvent: (data: EventInput) => request<EventItem>('POST', '/api/events', data),
   updateEvent: (id: string, data: Partial<EventInput>) => request<EventItem>('PATCH', `/api/events/${id}`, data),
   deleteEvent: (id: string) => request('DELETE', `/api/events/${id}`),
+  uploadMedia: (id: string, blob: Blob, type: string) => request<EventItem>('PUT', `/api/events/${id}/media`, undefined, { blob, type }),
+  deleteMedia: (id: string) => request('DELETE', `/api/events/${id}/media`),
   guests: (id: string) => request<Guest[]>('GET', `/api/events/${id}/guests`),
   addGuests: (id: string, guests: { name: string; phone: string }[]) =>
     request<{ added: Guest[]; rejected: { name: string; phone: string; reason: string }[] }>('POST', `/api/events/${id}/guests`, { guests }),

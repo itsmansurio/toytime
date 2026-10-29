@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from '../lib/themeContext';
 import { ToastProvider } from '../components/Toast';
 import { CommandPaletteProvider } from '../components/CommandPalette';
 import { colors, font } from '../lib/theme';
+import { t } from '../lib/i18n';
 
 function RootStack() {
   const { ready, signedIn } = useSession();
@@ -20,7 +21,7 @@ function RootStack() {
         headerTitleStyle: { color: colors.text, fontFamily: font.extrabold, fontSize: 18 },
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.bg },
-        headerBackTitle: 'Назад',
+        headerBackTitle: t('Назад'),
         contentStyle: { backgroundColor: colors.bg },
       }}
     >
@@ -29,7 +30,7 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="event/[id]/contacts" options={{ title: 'Гости из контактов', headerStyle: { backgroundColor: colors.header }, headerTintColor: '#FFFFFF', headerTitleStyle: { color: '#FFFFFF', fontFamily: font.extrabold, fontSize: 18 } }} />
+        <Stack.Screen name="event/[id]/contacts" options={{ title: t('Гости из контактов'), headerStyle: { backgroundColor: colors.header }, headerTintColor: '#FFFFFF', headerTitleStyle: { color: '#FFFFFF', fontFamily: font.extrabold, fontSize: 18 } }} />
         <Stack.Screen name="event/[id]/done" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack.Protected>
     </Stack>

@@ -4,6 +4,7 @@ import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, TextI
 import { Icon as Ionicons, type IconName } from './Icon';
 import { colors, font, initials, radius, shadow, themed } from '../lib/theme';
 import { useTheme } from '../lib/themeContext';
+import { t } from '../lib/i18n';
 
 export type { IconName };
 export { Ionicons };
@@ -236,12 +237,12 @@ const styles = themed(() => StyleSheet.create({
 
 // ---------- Блоки из макета заказчика ----------
 
-export function HeaderRow({ onBack, backLabel = 'Назад', right }: { onBack: () => void; backLabel?: string; right?: string }) {
+export function HeaderRow({ onBack, backLabel, right }: { onBack: () => void; backLabel?: string; right?: string }) {
   return (
     <View style={mock.headerRow}>
       <Pressable onPress={onBack} hitSlop={8} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         <Ionicons name="arrow-back" size={17} color={colors.green} strokeWidth={2.6} />
-        <T weight="extrabold" size={15} color={colors.green}>{backLabel}</T>
+        <T weight="extrabold" size={15} color={colors.green}>{backLabel ?? t('Назад')}</T>
       </Pressable>
       {right ? <T size={12} color={colors.muted}>{right}</T> : null}
     </View>

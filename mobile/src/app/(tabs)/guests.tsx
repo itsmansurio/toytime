@@ -11,24 +11,25 @@ import { TopHeader } from '../../components/TopHeader';
 import { useToast } from '../../components/Toast';
 import { rsvpLabel } from '../../lib/status';
 import { useTheme } from '../../lib/themeContext';
+import { t } from '../../lib/i18n';
 
-const DELIVERY: Record<string, string> = {
-  queued: 'в очереди', sending: 'отправляется', sent: 'отправлено', delivered: 'доставлено', read: 'прочитано',
-  failed: 'не доставлено', skipped: 'не отправлено', unknown: 'проверяется',
-};
+const DELIVERY = (): Record<string, string> => ({
+  queued: t('в очереди'), sending: t('отправляется'), sent: t('отправлено'), delivered: t('доставлено'), read: t('прочитано'),
+  failed: t('не доставлено'), skipped: t('не отправлено'), unknown: t('проверяется'),
+});
 
 function guestWord(n: number) {
   const m10 = n % 10, m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return 'гость';
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'гостя';
-  return 'гостей';
+  if (m10 === 1 && m100 !== 11) return t('гость');
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return t('гостя');
+  return t('гостей');
 }
 
 function confirmDelete(name: string): Promise<boolean> {
-  if (Platform.OS === 'web') return Promise.resolve(window.confirm(`Удалить гостя ${name}?`));
-  return new Promise((resolve) => Alert.alert('Удалить гостя?', name, [
-    { text: 'Отмена', style: 'cancel', onPress: () => resolve(false) },
-    { text: 'Удалить', style: 'destructive', onPress: () => resolve(true) },
+  if (Platform.OS === 'web') return Promise.resolve(window.confirm(t('Удалить гостя {name}?', { name })));
+  return new Promise((resolve) => Alert.alert(t('Удалить гостя?'), name, [
+    { text: t('Отмена'), style: 'cancel', onPress: () => resolve(false) },
+    { text: t('Удалить'), style: 'destructive', onPress: () => resolve(true) },
   ]));
 }
 
@@ -36,11 +37,11 @@ function GuestRow({ guest, last, open, onToggleOpen, onSelect, onStatus, onRemov
   guest: Guest; last: boolean; open: boolean; onToggleOpen: () => void; onSelect: () => void; onStatus: (r: Rsvp) => void; onRemove: () => void;
 }) {
   const st = rsvpLabel(guest.rsvp);
-  const sub = guest.rsvpSource === 'organizer' ? 'отмечено вами' : guest.messageStatus ? `WhatsApp: ${DELIVERY[guest.messageStatus] ?? guest.messageStatus}` : null;
+  const sub = guest.rsvpSource === 'organizer' ? t('отмечено вами') : guest.messageStatus ? `WhatsApp: ${DELIVERY()[guest.messageStatus] ?? guest.messageStatus}` : null;
   return (
     <View style={!last && styles.guestWrap}>
       <View style={styles.guest}>
-        <Pressable onPress={onSelect} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: guest.selected }} accessibilityLabel={`Выбрать ${guest.name}`}>
+        <Pressable onPress={onSelect} hitSlop={8} accessibilityRole="checkbox" accessibilityState={{ checked: guest.selected }} accessibilityLabel={t('Выбрать {name}', { name: guest.name })}>
           <Checkbox checked={guest.selected} />
         </Pressable>
         <View style={styles.avatar}><T weight="extrabold" size={15} color={colors.green}>{guest.name.slice(0, 1).toUpperCase()}</T></View>
@@ -49,11 +50,11 @@ function GuestRow({ guest, last, open, onToggleOpen, onSelect, onStatus, onRemov
           <T size={12} color={colors.muted}>{formatPhone(guest.phone)}</T>
           {sub ? <T size={11} color={guest.messageStatus === 'failed' ? colors.red : colors.muted}>{sub}</T> : null}
         </View>
-        <Pressable onPress={onToggleOpen} style={[styles.select, { backgroundColor: st.bg }]} accessibilityLabel="Статус">
+        <Pressable onPress={onToggleOpen} style={[styles.select, { backgroundColor: st.bg }]} accessibilityLabel={t('Статус')}>
           <T weight="bold" size={11} color={st.color}>{st.label}</T>
           <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={st.color} />
         </Pressable>
-        <Pressable onPress={onRemove} hitSlop={8} accessibilityLabel={`Удалить ${guest.name}`}>
+        <Pressable onPress={onRemove} hitSlop={8} accessibilityLabel={t('Удалить {name}', { name: guest.name })}>
           <Ionicons name="close" size={19} color={colors.muted} />
         </Pressable>
       </View>
@@ -88,19 +89,19 @@ export default function Guests() {
 
   const add = async () => {
     if (!id) return;
-    if (!name.trim()) { setFormError('Введите имя гостя'); return; }
+    if (!name.trim()) { setFormError(t('Введите имя гостя')); return; }
     const normalized = normalizePhone(phone);
-    if (!normalized) { setFormError('Введите номер WhatsApp в формате +7 7XX XXX XX XX'); return; }
+    if (!normalized) { setFormError(t('Введите номер WhatsApp в формате +7 7XX XXX XX XX')); return; }
     setAdding(true);
     setFormError(null);
     try {
       const res = await api.addGuests(id, [{ name: name.trim(), phone: normalized }]);
       if (res.rejected.length) { setFormError(res.rejected[0].reason); return; }
       setName(''); setPhone('');
-      toast('Гость добавлен');
+      toast(t('Гость добавлен'));
       reload();
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'Ошибка');
+      setFormError(e instanceof Error ? e.message : t('Ошибка'));
     } finally {
       setAdding(false);
     }
@@ -121,7 +122,7 @@ export default function Guests() {
   const setStatus = async (g: Guest, rsvp: Rsvp) => {
     setOpenId(null);
     patch(g, { rsvp, rsvpSource: rsvp === 'pending' ? null : 'organizer' });
-    try { await api.updateGuest(id!, g.id, { rsvp }); toast('Статус гостя обновлён'); } catch { reload(); }
+    try { await api.updateGuest(id!, g.id, { rsvp }); toast(t('Статус гостя обновлён')); } catch { reload(); }
   };
 
   const remove = async (g: Guest) => {
@@ -135,24 +136,24 @@ export default function Guests() {
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         <TopHeader />
         <View style={{ padding: 16 }}>
-          <SectionTitle right={`${guests.length} ${guestWord(guests.length)}`}>Список гостей</SectionTitle>
+          <SectionTitle right={`${guests.length} ${guestWord(guests.length)}`}>{t('Список гостей')}</SectionTitle>
           {!event ? (
             !eventLoading ? (
               <Card>
-                <EmptyState compact icon="calendar-outline" title="Сначала создайте мероприятие" text="Гости добавляются к мероприятию — это займёт минуту."
-                  action="Создать мероприятие" onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} />
+                <EmptyState compact icon="calendar-outline" title={t('Сначала создайте мероприятие')} text={t('Гости добавляются к мероприятию — это займёт минуту.')}
+                  action={t('Создать мероприятие')} onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} />
               </Card>
             ) : null
           ) : (
             <>
               <Card>
-                <Field label="Имя гостя" placeholder="Например, Данияр" value={name} onChangeText={setName} maxLength={100} />
-                <Field label="Номер WhatsApp" placeholder="+7 7XX XXX XX XX" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={20} />
+                <Field label={t('Имя гостя')} placeholder={t('Например, Данияр')} value={name} onChangeText={setName} maxLength={100} />
+                <Field label={t('Номер WhatsApp')} placeholder="+7 7XX XXX XX XX" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={20} />
                 <ErrorText>{formError}</ErrorText>
-                <Button title="Добавить гостя" icon="add" size="md" onPress={add} loading={adding} />
+                <Button title={t('Добавить гостя')} icon="add" size="md" onPress={add} loading={adding} />
                 <View style={styles.btnrow}>
-                  <Button title="Из контактов" icon="people-outline" variant="light" size="md" style={{ flex: 1 }} onPress={() => router.push(`/event/${id}/contacts`)} />
-                  <Button title="Выбрать всех" variant="outline" size="md" style={{ flex: 1 }} onPress={selectAll} disabled={!guests.length} />
+                  <Button title={t('Из контактов')} icon="people-outline" variant="light" size="md" style={{ flex: 1 }} onPress={() => router.push(`/event/${id}/contacts`)} />
+                  <Button title={t('Выбрать всех')} variant="outline" size="md" style={{ flex: 1 }} onPress={selectAll} disabled={!guests.length} />
                 </View>
               </Card>
               <ErrorText>{error}</ErrorText>
@@ -166,11 +167,11 @@ export default function Guests() {
                   <GuestRow key={g.id} last={i === guests.length - 1} guest={g} open={openId === g.id} onToggleOpen={() => setOpenId(openId === g.id ? null : g.id)}
                     onSelect={() => toggle(g)} onStatus={(r) => setStatus(g, r)} onRemove={() => remove(g)} />
                 )) : (
-                  <EmptyState compact icon="people-outline" title="Пока нет гостей" text="Добавьте первого гостя выше или выберите сразу нескольких из контактов телефона."
-                    action="Выбрать из контактов" onAction={() => router.push(`/event/${id}/contacts`)} />
+                  <EmptyState compact icon="people-outline" title={t('Пока нет гостей')} text={t('Добавьте первого гостя выше или выберите сразу нескольких из контактов телефона.')}
+                    action={t('Выбрать из контактов')} onAction={() => router.push(`/event/${id}/contacts`)} />
                 )}
               </View>
-              <Button title="Перейти к приглашению" icon="arrow-forward" size="md" onPress={() => router.navigate('/send')} disabled={!guests.length} />
+              <Button title={t('Перейти к приглашению')} icon="arrow-forward" size="md" onPress={() => router.navigate('/send')} disabled={!guests.length} />
             </>
           )}
         </View>

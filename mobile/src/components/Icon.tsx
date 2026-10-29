@@ -2,7 +2,7 @@ import type { ComponentType } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, Bell, Calendar, Check, ChevronDown, ChevronRight, ChevronUp, CircleAlert, Clock, Command,
-  Contact, CreditCard, House, Inbox, Info, Languages, Lock, MapPin, MessageCircle, MessageCircleMore, Monitor, Moon, PartyPopper,
+  Clapperboard, Contact, CreditCard, House, ImagePlus, Inbox, Info, Languages, Phone, Play, Lock, MapPin, MessageCircle, MessageCircleMore, Monitor, Moon, PartyPopper,
   Plus, Search, Send, Settings, Share, ShieldCheck, Sparkles, SquarePen, Sun, Tag, Trash, UserPlus, Users, Wallet, X,
   type LucideProps,
 } from 'lucide-react-native';
@@ -10,7 +10,7 @@ import { colors } from '../lib/theme';
 
 // Иконки Lucide. Имена совместимы с прежними (Ionicons), чтобы не менять экраны.
 const ICONS = {
-  'add': Plus, 'alert': CircleAlert, 'alert-circle': CircleAlert, 'arrow-back': ArrowLeft, 'arrow-forward': ArrowRight,
+  'add': Plus, 'image-plus': ImagePlus, 'video': Clapperboard, 'call': Phone, 'play': Play, 'alert': CircleAlert, 'alert-circle': CircleAlert, 'arrow-back': ArrowLeft, 'arrow-forward': ArrowRight,
   'arrow-up-right': ArrowUpRight, 'calendar-outline': Calendar, 'card': CreditCard, 'chatbubble-ellipses-outline': MessageCircleMore,
   'checkmark': Check, 'chevron-down': ChevronDown, 'chevron-forward': ChevronRight, 'chevron-up': ChevronUp, 'close': X,
   'command': Command, 'contact': Contact, 'create-outline': SquarePen, 'home': House, 'home-outline': House, 'inbox': Inbox,

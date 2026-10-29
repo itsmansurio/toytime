@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
+import { t } from './i18n';
 
 // Загружает данные при открытии экрана и обновляет их раз в intervalMs,
 // чтобы статистика менялась сама, когда гости отвечают.
@@ -15,7 +16,7 @@ export function useRefresh<T>(loader: () => Promise<T>, intervalMs = 8000) {
       setData(await loaderRef.current());
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : t('Ошибка'));
     } finally {
       setLoading(false);
     }

@@ -64,8 +64,28 @@ export function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
-const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-export function formatDateRu(isoDate) {
+const MONTHS = {
+  ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+  kk: ['қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан'],
+};
+// «28 ноября 2026 года» / «2026 жылғы 28 қараша».
+export function formatDate(isoDate, lang = 'ru') {
   const [y, m, d] = isoDate.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]} ${y} года`;
+  return lang === 'kk' ? `${y} жылғы ${d} ${MONTHS.kk[m - 1]}` : `${d} ${MONTHS.ru[m - 1]} ${y} года`;
+}
+export const formatDateRu = (isoDate) => formatDate(isoDate, 'ru');
+
+// Публичная ссылка на фото/видео приглашения. В подписи версия файла, поэтому
+// после замены файла старая ссылка перестаёт работать, а WhatsApp не берёт старый кэш.
+export function mediaToken(secret, eventId, updatedAt) {
+  const version = new Date(updatedAt).getTime().toString(36);
+  const sig = hmac(secret, `media:${eventId}:${version}`).subarray(0, 12).toString('base64url');
+  return `${eventId}.${version}.${sig}`;
+}
+
+export function parseMediaToken(secret, token) {
+  const [eventId, version, sig] = String(token).split('.');
+  if (!eventId || !version || !sig || eventId.length !== 36) return null;
+  const expected = hmac(secret, `media:${eventId}:${version}`).subarray(0, 12).toString('base64url');
+  return safeEqual(sig, expected) ? { eventId, version } : null;
 }

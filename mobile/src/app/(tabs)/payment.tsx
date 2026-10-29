@@ -10,13 +10,14 @@ import { Button, Card, Divider, EmptyState, ErrorText, Muted, Pill, SectionTitle
 import { TopHeader } from '../../components/TopHeader';
 import { useToast } from '../../components/Toast';
 import { useTheme } from '../../lib/themeContext';
+import { t } from '../../lib/i18n';
 
 function confirmDelete(): Promise<boolean> {
-  const msg = 'Мероприятие, гости и их ответы будут удалены.';
+  const msg = t('Мероприятие, гости и их ответы будут удалены.');
   if (Platform.OS === 'web') return Promise.resolve(window.confirm(msg));
-  return new Promise((resolve) => Alert.alert('Удалить мероприятие?', msg, [
-    { text: 'Отмена', style: 'cancel', onPress: () => resolve(false) },
-    { text: 'Удалить', style: 'destructive', onPress: () => resolve(true) },
+  return new Promise((resolve) => Alert.alert(t('Удалить мероприятие?'), msg, [
+    { text: t('Отмена'), style: 'cancel', onPress: () => resolve(false) },
+    { text: t('Удалить'), style: 'destructive', onPress: () => resolve(true) },
   ]));
 }
 
@@ -32,9 +33,9 @@ export default function Payment() {
 
   const price = (config?.priceKzt ?? 1000).toLocaleString('ru-RU');
   const status = event?.paymentStatus;
-  const pill = status === 'paid' ? { label: 'Оплачено', color: colors.yes, bg: colors.yesLight }
-    : status === 'pending' ? { label: 'Ждёт подтверждения', color: colors.amber, bg: colors.amberLight }
-    : { label: 'Не оплачено', color: colors.notice, bg: colors.goldLight };
+  const pill = status === 'paid' ? { label: t('Оплачено'), color: colors.yes, bg: colors.yesLight }
+    : status === 'pending' ? { label: t('Ждёт подтверждения'), color: colors.amber, bg: colors.amberLight }
+    : { label: t('Не оплачено'), color: colors.notice, bg: colors.goldLight };
 
   // «Оплачено» ставит только сервер — после подписанного уведомления провайдера.
   const waitForServer = async (id: string) => {
@@ -46,7 +47,7 @@ export default function Payment() {
         polling.current = false;
         setStage('idle');
         await reload();
-        toast('Оплата подтверждена');
+        toast(t('Оплата подтверждена'));
         router.navigate('/send');
         return;
       }
@@ -55,7 +56,7 @@ export default function Payment() {
     polling.current = false;
     setStage('idle');
     reload();
-    setError('Оплата пока не подтверждена. Если вы оплатили, подождите минуту — статус обновится сам.');
+    setError(t('Оплата пока не подтверждена. Если вы оплатили, подождите минуту — статус обновится сам.'));
   };
 
   const pay = async () => {
@@ -67,7 +68,7 @@ export default function Payment() {
       await WebBrowser.openBrowserAsync(payment.checkoutUrl);
       await waitForServer(event.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : t('Ошибка'));
       setStage('idle');
     }
   };
@@ -77,7 +78,7 @@ export default function Payment() {
     await api.deleteEvent(event.id);
     setCurrentId(null);
     await reload();
-    toast('Мероприятие удалено');
+    toast(t('Мероприятие удалено'));
     router.navigate('/');
   };
 
@@ -85,47 +86,46 @@ export default function Payment() {
     <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
       <TopHeader />
       <View style={{ padding: 16 }}>
-        <SectionTitle>Оплата мероприятия</SectionTitle>
+        <SectionTitle>{t('Оплата мероприятия')}</SectionTitle>
         {loading && !event ? <SkeletonCard lines={4} /> : !event ? (
-          <Card><EmptyState compact icon="wallet" title="Нечего оплачивать" text="Создайте мероприятие — оплата 1000 ₸ один раз за той." action="Создать мероприятие" onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} /></Card>
+          <Card><EmptyState compact icon="wallet" title={t('Нечего оплачивать')} text={t('Создайте мероприятие — оплата 1000 ₸ один раз за той.')} action={t('Создать мероприятие')} onAction={() => router.navigate({ pathname: '/event', params: { mode: 'new' } })} /></Card>
         ) : null}
         {event ? <Card>
-          <Muted>Стоимость одного мероприятия</Muted>
+          <Muted>{t('Стоимость одного мероприятия')}</Muted>
           <T weight="extrabold" size={29} style={{ letterSpacing: -1, lineHeight: 36 }}>
-            {price} ₸ <T weight="semibold" size={13} color={colors.muted}>/ мероприятие</T>
+            {price} ₸ <T weight="semibold" size={13} color={colors.muted}>{t('/ мероприятие')}</T>
           </T>
           <Divider />
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <T weight="bold" size={15}>{event?.title ?? 'Ваш той'}</T>
-              <Muted>Без рекламы · без оплаты за каждого гостя</Muted>
+              <T weight="bold" size={15}>{event?.title ?? t('Ваш той')}</T>
+              <Muted>{t('Без рекламы · без оплаты за каждого гостя')}</Muted>
             </View>
             <Pill {...pill} />
           </View>
           <Divider />
-          <View style={styles.row}><Muted>Количество гостей</Muted><T weight="bold">{event?.stats?.total ?? 0}</T></View>
-          <View style={[styles.row, { marginTop: 10 }]}><Muted>К оплате</Muted><T weight="bold">{status === 'paid' ? '0 ₸' : `${price} ₸`}</T></View>
+          <View style={styles.row}><Muted>{t('Количество гостей')}</Muted><T weight="bold">{event?.stats?.total ?? 0}</T></View>
+          <View style={[styles.row, { marginTop: 10 }]}><Muted>{t('К оплате')}</Muted><T weight="bold">{status === 'paid' ? '0 ₸' : `${price} ₸`}</T></View>
           <ErrorText>{error}</ErrorText>
           {status === 'paid' ? (
-            <Button title="Перейти к рассылке" icon="arrow-forward" size="md" style={{ marginTop: 16 }} onPress={() => router.navigate('/send')} />
+            <Button title={t('Перейти к рассылке')} icon="arrow-forward" size="md" style={{ marginTop: 16 }} onPress={() => router.navigate('/send')} />
           ) : (
-            <Button title={stage === 'waiting' ? 'Ждём подтверждения оплаты…' : `Оплатить ${price} ₸`} size="md" style={{ marginTop: 16 }}
+            <Button title={stage === 'waiting' ? t('Ждём подтверждения оплаты…') : t('Оплатить {n} ₸', { n: price })} size="md" style={{ marginTop: 16 }}
               onPress={pay} loading={stage === 'paying'} disabled={!event || stage === 'waiting'} />
           )}
           <Muted style={{ marginTop: 10 }}>
             {config?.testMode.payments
-              ? 'Оплата сейчас тестовая: деньги не списываются. Для запуска подключим платёжного провайдера в Казахстане — например, Kaspi Pay или другой эквайринг.'
-              : 'Оплата проходит на защищённой странице провайдера. Статус «Оплачено» ставит сервер после подтверждения.'}
+              ? t('Оплата сейчас тестовая: деньги не списываются. Для запуска подключим платёжного провайдера в Казахстане — например, Kaspi Pay или другой эквайринг.')
+              : t('Оплата проходит на защищённой странице провайдера. Статус «Оплачено» ставит сервер после подтверждения.')}
           </Muted>
         </Card> : null}
         <Card>
-          <T weight="bold" size={15}>Что входит в стоимость</T>
+          <T weight="bold" size={15}>{t('Что входит в стоимость')}</T>
           <Muted style={{ marginTop: 6 }}>
-            Создание мероприятия, список гостей без ограничений, отправка приглашений в WhatsApp, сбор ответов «Приду / Не смогу»
-            и до трёх напоминаний тем, кто не ответил.
+            {t('Создание мероприятия, список гостей без ограничений, отправка приглашений с фото или видео в WhatsApp, сбор ответов «Приду / Не смогу» и три напоминания: тем, кто ответил «Приду», и тем, кто ещё не ответил.')}
           </Muted>
         </Card>
-        {event ? <Button title="Удалить мероприятие" variant="outline" size="md" onPress={remove} /> : null}
+        {event ? <Button title={t('Удалить мероприятие')} variant="outline" size="md" onPress={remove} /> : null}
       </View>
     </ScrollView>
   );

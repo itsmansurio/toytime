@@ -7,6 +7,7 @@ import { formatPhone, normalizePhone } from '../../../lib/phone';
 import { colors, font, radius, themed } from '../../../lib/theme';
 import { Avatar, Button, EmptyState, ErrorText, Ionicons, T } from '../../../components/ui';
 import { useTheme } from '../../../lib/themeContext';
+import { t } from '../../../lib/i18n';
 
 interface Candidate { key: string; name: string; phone: string }
 
@@ -29,7 +30,7 @@ async function loadContacts(): Promise<Candidate[]> {
 }
 
 export default function ContactsPicker() {
-  const { mode } = useTheme();
+  const { mode, lang } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [stage, setStage] = useState<'ask' | 'loading' | 'list' | 'denied'>('ask');
   const [contacts, setContacts] = useState<Candidate[]>([]);
@@ -50,7 +51,7 @@ export default function ContactsPicker() {
       setContacts(all.filter((c) => !already.has(c.phone)));
       setStage('list');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось прочитать контакты');
+      setError(e instanceof Error ? e.message : t('Не удалось прочитать контакты'));
       setStage('ask');
     }
   };
@@ -76,7 +77,7 @@ export default function ContactsPicker() {
       await api.addGuests(id, guests);
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : t('Ошибка'));
       setSaving(false);
     }
   };
@@ -87,17 +88,17 @@ export default function ContactsPicker() {
       <View style={styles.ask}>
         <EmptyState
           icon={denied ? 'lock-closed-outline' : 'people-outline'}
-          title={denied ? 'Нет доступа к контактам' : 'Разрешите доступ к контактам'}
+          title={denied ? t('Нет доступа к контактам') : t('Разрешите доступ к контактам')}
           text={denied
             ? Platform.OS === 'web'
-              ? 'В браузере контакты недоступны. Добавьте гостей вручную.'
-              : 'Доступ можно включить в настройках телефона. А пока добавьте гостей вручную.'
-            : 'Так вы быстро выберете гостей. Контакты читаются только на телефоне — на сервер уходят лишь отмеченные вами люди.'}
+              ? t('В браузере контакты недоступны. Добавьте гостей вручную.')
+              : t('Доступ можно включить в настройках телефона. А пока добавьте гостей вручную.')
+            : t('Так вы быстро выберете гостей. Контакты читаются только на телефоне — на сервер уходят лишь отмеченные вами люди.')}
         />
         <View style={{ alignSelf: 'stretch', marginTop: 28 }}>
           <ErrorText>{error}</ErrorText>
-          {!denied ? <Button title="Разрешить" icon="checkmark" onPress={allow} /> : null}
-          <Button title={denied ? 'Добавить вручную' : 'Позже'} variant={denied ? 'primary' : 'outline'} style={{ marginTop: 10 }}
+          {!denied ? <Button title={t('Разрешить')} icon="checkmark" onPress={allow} /> : null}
+          <Button title={denied ? t('Добавить вручную') : t('Позже')} variant={denied ? 'primary' : 'outline'} style={{ marginTop: 10 }}
             onPress={() => router.back()} />
         </View>
       </View>
@@ -111,15 +112,15 @@ export default function ContactsPicker() {
       <View style={{ padding: 16, paddingTop: 4, paddingBottom: 8 }}>
         <View style={styles.search}>
           <Ionicons name="search" size={18} color={colors.muted} />
-          <TextInput style={styles.searchInput} placeholder="Поиск контактов…" placeholderTextColor={colors.muted} value={query} onChangeText={setQuery} />
+          <TextInput style={styles.searchInput} placeholder={t('Поиск контактов…')} placeholderTextColor={colors.muted} value={query} onChangeText={setQuery} />
         </View>
         <View style={styles.selRow}>
-          <T weight="bold" size={14}>Выбрано: {selected.size}</T>
-          {selected.size ? <Pressable onPress={() => setSelected(new Set())}><T weight="semibold" size={14} color={colors.green}>Очистить</T></Pressable> : null}
+          <T weight="bold" size={14}>{t('Выбрано')}: {selected.size}</T>
+          {selected.size ? <Pressable onPress={() => setSelected(new Set())}><T weight="semibold" size={14} color={colors.green}>{t('Очистить')}</T></Pressable> : null}
         </View>
       </View>
       <FlatList
-      extraData={mode}
+      extraData={mode + lang}
         data={filtered}
         keyExtractor={(c) => c.key}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
@@ -140,7 +141,7 @@ export default function ContactsPicker() {
       />
       <View style={styles.bottom}>
         <ErrorText>{error}</ErrorText>
-        <Button title={`Выбрать (${selected.size})`} icon="checkmark" onPress={save} disabled={!selected.size} loading={saving} />
+        <Button title={`${t('Выбрать')} (${selected.size})`} icon="checkmark" onPress={save} disabled={!selected.size} loading={saving} />
       </View>
     </View>
   );

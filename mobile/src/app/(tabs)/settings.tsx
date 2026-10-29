@@ -7,38 +7,52 @@ import { router } from 'expo-router';
 import { ErrorText, HeaderRow, IconTile, Ionicons, Row, SectionTitle, T, TestBanner } from '../../components/ui';
 import { TopHeader } from '../../components/TopHeader';
 import { useTheme } from '../../lib/themeContext';
+import { LANGS, t } from '../../lib/i18n';
 
 function confirm(title: string, message: string): Promise<boolean> {
   if (Platform.OS === 'web') return Promise.resolve(window.confirm(`${title}\n\n${message}`));
   return new Promise((resolve) => Alert.alert(title, message, [
-    { text: 'Отмена', style: 'cancel', onPress: () => resolve(false) },
-    { text: 'Удалить', style: 'destructive', onPress: () => resolve(true) },
+    { text: t('Отмена'), style: 'cancel', onPress: () => resolve(false) },
+    { text: t('Удалить'), style: 'destructive', onPress: () => resolve(true) },
   ]));
 }
 
 export default function Settings() {
-  const { mode, pref, setPref } = useTheme();
+  const { mode, pref, setPref, lang, setLang } = useTheme();
   const { config, revokeConsent } = useSession();
   const [error, setError] = useState<string | null>(null);
 
   const revoke = async () => {
-    const ok = await confirm('Отозвать согласие?', 'Все ваши мероприятия, списки гостей и их ответы будут удалены с сервера без возможности восстановления.');
+    const ok = await confirm(t('Отозвать согласие?'), t('Все ваши мероприятия, списки гостей и их ответы будут удалены с сервера без возможности восстановления.'));
     if (!ok) return;
-    try { await revokeConsent(); } catch (e) { setError(e instanceof Error ? e.message : 'Ошибка'); }
+    try { await revokeConsent(); } catch (e) { setError(e instanceof Error ? e.message : t('Ошибка')); }
   };
 
-  const testParts = [config?.testMode.whatsapp && 'сообщения WhatsApp не уходят реальным гостям', config?.testMode.payments && 'оплата не списывается'].filter(Boolean);
+  const testParts = [config?.testMode.whatsapp && t('сообщения WhatsApp не уходят реальным гостям'), config?.testMode.payments && t('оплата не списывается')].filter(Boolean);
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-      <TopHeader title="Настройки" subtitle="Данные, конфиденциальность и поддержка." />
+      <TopHeader title={t('Настройки')} subtitle={t('Данные, конфиденциальность и поддержка.')} />
       <View style={{ padding: 16 }}>
         <HeaderRow onBack={() => router.navigate('/')} />
-      {testParts.length ? <TestBanner>Тестовый режим: {testParts.join(', ')}.</TestBanner> : null}
+      {testParts.length ? <TestBanner>{t('Тестовый режим')}: {testParts.join(', ')}.</TestBanner> : null}
 
-      <SectionTitle>Оформление</SectionTitle>
+      <SectionTitle>{t('Язык приложения')}</SectionTitle>
+      <View style={[styles.segment, { marginBottom: 16 }]}>
+        {LANGS.map((l) => {
+          const on = lang === l.value;
+          return (
+            <Pressable key={l.value} onPress={() => setLang(l.value)} style={[styles.segItem, on && styles.segOn]} accessibilityRole="radio" accessibilityState={{ checked: on }}>
+              <Ionicons name="language-outline" size={16} color={on ? colors.onPrimary : colors.textSoft} />
+              <T weight="bold" size={13} color={on ? colors.onPrimary : colors.textSoft}>{l.label}</T>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <SectionTitle>{t('Оформление')}</SectionTitle>
       <View style={styles.segment}>
-        {([['light', 'sun', 'Светлая'], ['dark', 'moon', 'Тёмная'], ['system', 'monitor', 'Как в системе']] as const).map(([key, icon, label]) => {
+        {([['light', 'sun', t('Светлая')], ['dark', 'moon', t('Тёмная')], ['system', 'monitor', t('Как в системе')]] as const).map(([key, icon, label]) => {
           const on = pref === key;
           return (
             <Pressable key={key} onPress={() => setPref(key)} style={[styles.segItem, on && styles.segOn]} accessibilityRole="radio" accessibilityState={{ checked: on }}>
@@ -48,33 +62,32 @@ export default function Settings() {
           );
         })}
       </View>
-      <T size={12} color={colors.muted} style={{ marginTop: -10, marginBottom: 16, marginLeft: 2 }}>Сейчас: {mode === 'dark' ? 'тёмная' : 'светлая'} тема</T>
+      <T size={12} color={colors.muted} style={{ marginTop: -10, marginBottom: 16, marginLeft: 2 }}>{mode === 'dark' ? t('Сейчас: тёмная тема') : t('Сейчас: светлая тема')}</T>
 
-      <SectionTitle>Приложение</SectionTitle>
+      <SectionTitle>{t('Приложение')}</SectionTitle>
       <View style={styles.group}>
-        <Row icon="language-outline" title="Язык приложения" value="Русский" />
-        <Row icon="pricetag-outline" title="Стоимость" value={`${config?.priceKzt ?? 1000} ₸ за той`} last />
+        <Row icon="pricetag-outline" title={t('Стоимость')} value={t('{n} ₸ за той', { n: config?.priceKzt ?? 1000 })} last />
       </View>
 
-      <SectionTitle>Помощь</SectionTitle>
+      <SectionTitle>{t('Помощь')}</SectionTitle>
       <View style={styles.group}>
-        <Row icon="shield-checkmark-outline" title="Конфиденциальность" onPress={() => Linking.openURL(`${API_URL}/privacy`)} />
-        <Row icon="chatbubble-ellipses-outline" title="Поддержка" onPress={() => Linking.openURL('mailto:support@toitime.kz')} last />
+        <Row icon="shield-checkmark-outline" title={t('Конфиденциальность')} onPress={() => Linking.openURL(`${API_URL}/privacy`)} />
+        <Row icon="chatbubble-ellipses-outline" title={t('Поддержка')} onPress={() => Linking.openURL('mailto:support@toitime.kz')} last />
       </View>
 
       <View style={styles.safe}>
         <IconTile name="lock-closed" size={44} color={colors.onPrimary} bg={colors.primary} />
         <View style={{ flex: 1 }}>
-          <T weight="bold" size={15}>Ваши данные в безопасности</T>
+          <T weight="bold" size={15}>{t('Ваши данные в безопасности')}</T>
           <T size={13} color={colors.textSoft} style={{ marginTop: 3 }}>
-            Без рекламы. Контакты читаются только на телефоне — на сервер уходят лишь выбранные гости.
+            {t('Без рекламы. Контакты читаются только на телефоне — на сервер уходят лишь выбранные гости.')}
           </T>
         </View>
       </View>
 
       <ErrorText>{error}</ErrorText>
       <View style={styles.group}>
-        <Row icon="trash-outline" title="Отозвать согласие и удалить данные" onPress={revoke} danger last />
+        <Row icon="trash-outline" title={t('Отозвать согласие и удалить данные')} onPress={revoke} danger last />
       </View>
       <T size={12} color={colors.muted} style={{ textAlign: 'center', marginTop: 8 }}>ToiTime 1.0 · MVP</T>
       </View>

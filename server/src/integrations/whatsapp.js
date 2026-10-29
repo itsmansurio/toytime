@@ -27,6 +27,7 @@ export function createCloudApiClient(config) {
           name: msg.template,
           language: { code: msg.language },
           components: [
+            ...(msg.header ? [{ type: 'header', parameters: [{ type: msg.header.type, [msg.header.type]: { link: msg.header.link } }] }] : []),
             { type: 'body', parameters: msg.bodyParams.map((text) => ({ type: 'text', text })) },
             { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: msg.buttonUrlSuffix }] },
           ],

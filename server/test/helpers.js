@@ -35,6 +35,7 @@ export async function newEvent(api, token, overrides = {}) {
     event_time: '19:00',
     address: 'Ресторан «Астана», ул. Нурсултана Назарбаева, 10',
     invitation_text: 'Будем рады видеть вас!',
+    host_phone: '+7 701 555 44 33',
     ...overrides,
   });
   if (res.status !== 201) throw new Error(JSON.stringify(res.body));

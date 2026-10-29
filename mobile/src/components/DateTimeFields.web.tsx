@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { colors, font, radius, themed } from '../lib/theme';
 import { toIsoDate, toTime } from '../lib/format';
 import { Ionicons } from './ui';
+import { t } from '../lib/i18n';
 
 // Веб-версия (демо в браузере): нативные поля даты и времени браузера.
 export function DateTimeFields({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {

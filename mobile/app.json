@@ -43,6 +43,14 @@
           "contactsPermission": "ToiTime показывает ваши контакты, чтобы вы выбрали гостей. На сервер передаются только выбранные гости."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ToiTime открывает галерею, чтобы вы выбрали фото или видео для приглашения.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       "expo-notifications",
       "expo-font"
     ],

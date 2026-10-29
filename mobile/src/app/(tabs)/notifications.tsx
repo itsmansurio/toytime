@@ -8,6 +8,8 @@ import { EmptyState, ErrorText, HeaderRow, IconTile, T, type IconName } from '..
 import { useCurrentEvent } from '../../lib/current';
 import { TopHeader } from '../../components/TopHeader';
 import { useTheme } from '../../lib/themeContext';
+import { t, translateServerText } from '../../lib/i18n';
+import { formatDate } from '../../lib/format';
 
 function kind(text: string): { icon: IconName; color: string; bg: string } {
   if (text.includes(' не сможет прийти')) return { icon: 'close', color: colors.red, bg: colors.redLight };
@@ -18,10 +20,10 @@ function kind(text: string): { icon: IconName; color: string; bg: string } {
 
 function timeAgo(iso: string) {
   const diff = (Date.now() - new Date(iso).getTime()) / 60000;
-  if (diff < 1) return 'только что';
-  if (diff < 60) return `${Math.floor(diff)} мин назад`;
-  if (diff < 24 * 60) return `${Math.floor(diff / 60)} ч назад`;
-  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  if (diff < 1) return t('только что');
+  if (diff < 60) return t('{n} мин назад', { n: Math.floor(diff) });
+  if (diff < 24 * 60) return t('{n} ч назад', { n: Math.floor(diff / 60) });
+  return formatDate(new Date(iso).toISOString().slice(0, 10)).replace(/ \d{4}$/, '').replace(/^\d{4} ж\. /, '');
 }
 
 function Item({ item, onOpen }: { item: NotificationItem; onOpen: (eventId: string) => void }) {
@@ -30,7 +32,7 @@ function Item({ item, onOpen }: { item: NotificationItem; onOpen: (eventId: stri
     <Pressable onPress={() => item.eventId && onOpen(item.eventId)} style={styles.item}>
       <IconTile name={k.icon} color={k.color} bg={k.bg} size={40} />
       <View style={{ flex: 1 }}>
-        <T weight={item.read ? 'medium' : 'semibold'} size={15}>{item.text}</T>
+        <T weight={item.read ? 'medium' : 'semibold'} size={15}>{translateServerText(item.text)}</T>
         <T size={12} color={colors.muted} style={{ marginTop: 3 }}>{timeAgo(item.createdAt)}</T>
       </View>
       {!item.read ? <View style={styles.unread} /> : null}
@@ -39,19 +41,19 @@ function Item({ item, onOpen }: { item: NotificationItem; onOpen: (eventId: stri
 }
 
 export default function Notifications() {
-  const { mode } = useTheme();
+  const { mode, lang } = useTheme();
   const { data, error, loading } = useRefresh(api.notifications);
   const { setCurrentId } = useCurrentEvent(60000);
   useFocusEffect(useCallback(() => () => { api.markNotificationsRead().catch(() => {}); }, []));
   return (
     <FlatList
-      extraData={mode}
+      extraData={mode + lang}
       contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
       data={data ?? []}
       keyExtractor={(n) => String(n.id)}
-      ListHeaderComponent={<><TopHeader title="Уведомления" subtitle="Ответы гостей, оплата и статусы рассылки." /><View style={{ paddingHorizontal: 16, paddingTop: 16 }}><HeaderRow onBack={() => router.navigate('/')} /><ErrorText>{error}</ErrorText></View></>}
+      ListHeaderComponent={<><TopHeader title={t('Уведомления')} subtitle={t('Ответы гостей, оплата и статусы рассылки.')} /><View style={{ paddingHorizontal: 16, paddingTop: 16 }}><HeaderRow onBack={() => router.navigate('/')} /><ErrorText>{error}</ErrorText></View></>}
       ListEmptyComponent={loading ? undefined : (
-        <EmptyState icon="notifications-outline" title="Пока тихо" text="Здесь появятся ответы гостей, подтверждения оплаты и статусы рассылки." action="Добавить гостей" onAction={() => router.navigate('/guests')} />
+        <EmptyState icon="notifications-outline" title={t('Пока тихо')} text={t('Здесь появятся ответы гостей, подтверждения оплаты и статусы рассылки.')} action={t('Добавить гостей')} onAction={() => router.navigate('/guests')} />
       )}
       renderItem={({ item }) => <View style={{ paddingHorizontal: 16 }}><Item item={item} onOpen={(eventId) => { setCurrentId(eventId); router.navigate('/guests'); }} /></View>}
     />

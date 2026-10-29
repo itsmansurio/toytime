@@ -9,6 +9,7 @@ import { useSession } from '../lib/session';
 import { useRefresh } from '../lib/useRefresh';
 import { Ionicons, T, type IconName } from './ui';
 import { useCommandPalette } from './CommandPalette';
+import { t } from '../lib/i18n';
 
 // Шапка из макета заказчика: тёмно-зелёная, со скруглением снизу, логотип ToiTime.
 export function Brand({ size = 23 }: { size?: number }) {
@@ -29,18 +30,20 @@ function HeaderIcon({ name, label, onPress, badge }: { name: IconName; label: st
   );
 }
 
-export function TopHeader({ title = 'Той начинается\nс хорошей организации.', subtitle = 'Приглашения, ответы гостей и напоминания — в одном месте.', children }: {
+export function TopHeader({ title: titleProp, subtitle: subtitleProp, children }: {
   title?: string; subtitle?: string; children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { mode, toggle } = useTheme();
+  const title = titleProp ?? t('Той начинается\nс хорошей организации.');
+  const subtitle = subtitleProp ?? t('Приглашения, ответы гостей и напоминания — в одном месте.');
   const { config } = useSession();
   const palette = useCommandPalette();
   const demo = config?.testMode.whatsapp || config?.testMode.payments;
   const { data: notes } = useRefresh(api.notifications, 15000);
   const unread = (notes ?? []).filter((n) => !n.read).length;
-  const tag = <View style={styles.tag}><T weight="semibold" size={11} color="#E3EEE8">{demo ? 'БЕЗ РЕКЛАМЫ · ДЕМО' : 'БЕЗ РЕКЛАМЫ'}</T></View>;
+  const tag = <View style={styles.tag}><T weight="semibold" size={11} color="#E3EEE8">{demo ? t('БЕЗ РЕКЛАМЫ · ДЕМО') : t('БЕЗ РЕКЛАМЫ')}</T></View>;
   const wide = width >= 470;
   return (
     <View style={[styles.top, { paddingTop: insets.top + 20 }]}>
@@ -48,10 +51,10 @@ export function TopHeader({ title = 'Той начинается\nс хорош�
         <Brand />
         <View style={styles.right}>
           {wide ? tag : null}
-          <HeaderIcon name="search" label="Поиск (Ctrl+K)" onPress={palette.open} />
-          <HeaderIcon name={mode === 'dark' ? 'sun' : 'moon'} label={mode === 'dark' ? 'Светлая тема' : 'Тёмная тема'} onPress={toggle} />
-          <HeaderIcon name="notifications-outline" label="Уведомления" onPress={() => router.push('/notifications')} badge={unread} />
-          <HeaderIcon name="settings-outline" label="Настройки" onPress={() => router.push('/settings')} />
+          <HeaderIcon name="search" label={t('Поиск (Ctrl+K)')} onPress={palette.open} />
+          <HeaderIcon name={mode === 'dark' ? 'sun' : 'moon'} label={mode === 'dark' ? t('Светлая тема') : t('Тёмная тема')} onPress={toggle} />
+          <HeaderIcon name="notifications-outline" label={t('Уведомления')} onPress={() => router.push('/notifications')} badge={unread} />
+          <HeaderIcon name="settings-outline" label={t('Настройки')} onPress={() => router.push('/settings')} />
         </View>
       </View>
       {!wide ? <View style={{ flexDirection: 'row', marginTop: 16 }}>{tag}</View> : null}

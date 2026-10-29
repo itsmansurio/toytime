@@ -9,7 +9,9 @@ import { colors, font, radius, themed } from '../lib/theme';
 import { useTheme } from '../lib/themeContext';
 import { useSession } from '../lib/session';
 import { Ionicons, T, type IconName } from './ui';
+import { t } from '../lib/i18n';
 
+const GROUP_TITLE: Record<string, () => string> = { actions: () => t('Действия'), events: () => t('Мероприятия'), guests: () => t('Гости') };
 type Item = { key: string; icon: IconName; title: string; hint?: string; group: string; run: () => void };
 const PaletteContext = createContext<{ open: () => void }>({ open: () => {} });
 export const useCommandPalette = () => useContext(PaletteContext);
@@ -39,7 +41,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 }
 
 function Palette({ onClose }: { onClose: () => void }) {
-  const { mode, toggle } = useTheme();
+  const { mode, toggle, lang } = useTheme();
   const { currentId, setCurrentId } = useCurrentId();
   const [query, setQuery] = useState('');
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -55,25 +57,25 @@ function Palette({ onClose }: { onClose: () => void }) {
 
   const go = (fn: () => void) => () => { onClose(); fn(); };
   const items: Item[] = useMemo(() => [
-    { key: 'new', icon: 'add', title: 'Создать мероприятие', group: 'Действия', run: go(() => router.navigate({ pathname: '/event', params: { mode: 'new' } })) },
-    { key: 'guest', icon: 'user-plus', title: 'Добавить гостя', group: 'Действия', run: go(() => router.navigate('/guests')) },
-    { key: 'send', icon: 'send', title: 'Отправить приглашения', group: 'Действия', run: go(() => router.navigate('/send')) },
-    { key: 'pay', icon: 'wallet', title: 'Оплатить мероприятие', group: 'Действия', run: go(() => router.navigate('/payment')) },
-    { key: 'home', icon: 'home', title: 'На главную', group: 'Действия', run: go(() => router.navigate('/')) },
-    { key: 'theme', icon: mode === 'dark' ? 'sun' : 'moon', title: mode === 'dark' ? 'Светлая тема' : 'Тёмная тема', group: 'Действия', run: go(toggle) },
-    { key: 'notes', icon: 'notifications-outline', title: 'Уведомления', group: 'Действия', run: go(() => router.navigate('/notifications')) },
-    { key: 'settings', icon: 'settings-outline', title: 'Настройки', group: 'Действия', run: go(() => router.navigate('/settings')) },
-    ...events.map((e): Item => ({ key: `e${e.id}`, icon: 'calendar-outline', title: e.title, hint: `${formatDate(e.eventDate)} · ${e.address}`, group: 'Мероприятия',
+    { key: 'new', icon: 'add', title: t('Создать мероприятие'), group: 'actions', run: go(() => router.navigate({ pathname: '/event', params: { mode: 'new' } })) },
+    { key: 'guest', icon: 'user-plus', title: t('Добавить гостя'), group: 'actions', run: go(() => router.navigate('/guests')) },
+    { key: 'send', icon: 'send', title: t('Отправить приглашения'), group: 'actions', run: go(() => router.navigate('/send')) },
+    { key: 'pay', icon: 'wallet', title: t('Оплатить мероприятие'), group: 'actions', run: go(() => router.navigate('/payment')) },
+    { key: 'home', icon: 'home', title: t('На главную'), group: 'actions', run: go(() => router.navigate('/')) },
+    { key: 'theme', icon: mode === 'dark' ? 'sun' : 'moon', title: mode === 'dark' ? t('Светлая тема') : t('Тёмная тема'), group: 'actions', run: go(toggle) },
+    { key: 'notes', icon: 'notifications-outline', title: t('Уведомления'), group: 'actions', run: go(() => router.navigate('/notifications')) },
+    { key: 'settings', icon: 'settings-outline', title: t('Настройки'), group: 'actions', run: go(() => router.navigate('/settings')) },
+    ...events.map((e): Item => ({ key: `e${e.id}`, icon: 'calendar-outline', title: e.title, hint: `${formatDate(e.eventDate)} · ${e.address}`, group: 'events',
       run: go(() => { setCurrentId(e.id); router.navigate('/'); }) })),
-    ...guests.map((g): Item => ({ key: `g${g.id}`, icon: 'people-outline', title: g.name, hint: formatPhone(g.phone), group: 'Гости',
+    ...guests.map((g): Item => ({ key: `g${g.id}`, icon: 'people-outline', title: g.name, hint: formatPhone(g.phone), group: 'guests',
       run: go(() => router.navigate('/guests')) })),
-  ], [events, guests, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  ], [events, guests, mode, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const q = query.trim().toLowerCase();
   const digits = q.replace(/\D/g, '');
   const found = items.filter((i) => !q || i.title.toLowerCase().includes(q) || (i.hint ?? '').toLowerCase().includes(q)
     || (digits.length >= 3 && (i.hint ?? '').replace(/\D/g, '').includes(digits)));
-  const visible = q ? found : found.filter((i) => i.group !== 'Гости');
+  const visible = q ? found : found.filter((i) => i.group !== 'guests');
   const groups = [...new Set(visible.map((i) => i.group))];
 
   return (
@@ -82,7 +84,7 @@ function Palette({ onClose }: { onClose: () => void }) {
         <Pressable style={styles.panel} onPress={() => {}}>
           <View style={styles.searchRow}>
             <Ionicons name="search" size={18} color={colors.muted} />
-            <TextInput autoFocus value={query} onChangeText={setQuery} placeholder="Поиск: гости, мероприятия, действия" placeholderTextColor={colors.muted}
+            <TextInput autoFocus value={query} onChangeText={setQuery} placeholder={t('Поиск: гости, мероприятия, действия')} placeholderTextColor={colors.muted}
               style={styles.input} onSubmitEditing={() => visible[0]?.run()} returnKeyType="go" />
             {Platform.OS === 'web' ? <View style={styles.kbd}><T size={11} weight="semibold" color={colors.muted}>Esc</T></View> : (
               <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={18} color={colors.muted} /></Pressable>
@@ -91,7 +93,7 @@ function Palette({ onClose }: { onClose: () => void }) {
           <ScrollView style={{ maxHeight: 420 }} keyboardShouldPersistTaps="handled">
             {groups.map((g) => (
               <View key={g} style={{ paddingVertical: 6 }}>
-                <T size={11} weight="bold" color={colors.muted} style={styles.group}>{g.toUpperCase()}</T>
+                <T size={11} weight="bold" color={colors.muted} style={styles.group}>{GROUP_TITLE[g]().toUpperCase()}</T>
                 {visible.filter((i) => i.group === g).map((i, idx) => (
                   <Pressable key={i.key} onPress={i.run} style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [styles.item, (pressed || hovered || (q && idx === 0 && g === groups[0])) && { backgroundColor: colors.greenSoft }]}>
                     <View style={styles.itemIcon}><Ionicons name={i.icon} size={16} color={colors.green} /></View>
@@ -105,13 +107,13 @@ function Palette({ onClose }: { onClose: () => void }) {
             ))}
             {!visible.length ? (
               <View style={{ alignItems: 'center', padding: 24 }}>
-                <T weight="bold">Ничего не найдено</T>
-                <T size={13} color={colors.muted} style={{ marginTop: 4, textAlign: 'center' }}>Попробуйте имя гостя, номер телефона или название тоя.</T>
+                <T weight="bold">{t('Ничего не найдено')}</T>
+                <T size={13} color={colors.muted} style={{ marginTop: 4, textAlign: 'center' }}>{t('Попробуйте имя гостя, номер телефона или название тоя.')}</T>
               </View>
             ) : null}
           </ScrollView>
           {Platform.OS === 'web' ? (
-            <View style={styles.footer}><T size={11} color={colors.muted}>Enter — открыть · Ctrl+K / ⌘K — поиск в любом месте</T></View>
+            <View style={styles.footer}><T size={11} color={colors.muted}>{t('Enter — открыть · Ctrl+K / ⌘K — поиск в любом месте')}</T></View>
           ) : null}
         </Pressable>
       </Pressable>

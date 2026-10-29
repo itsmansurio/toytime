@@ -1,19 +1,29 @@
-import { guestToken, phoneHash } from '../util.js';
+import { guestToken, mediaToken, phoneHash } from '../util.js';
 import { buildTemplateMessage } from '../integrations/whatsapp-templates.js';
 
 const STATUS_RANK = { queued: 0, sending: 0, unknown: 0, sent: 1, delivered: 2, read: 3 };
 const STOP_WORDS = new Set(['стоп', 'stop', 'отписаться', 'unsubscribe', 'тоқтату']);
 
-// Напоминания: первое (за 7 или 10 дней), за 3 дня и в день мероприятия.
-export function reminderSchedule(event) {
-  const start = new Date(event.starts_at).getTime();
-  const day = 24 * 3600 * 1000;
+export const REMINDER_HOUR = '09:00'; // по времени Астаны
+
+// Дата на N дней раньше: '2026-11-28', 3 → '2026-11-25'.
+function daysBefore(isoDate, n) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d - n)).toISOString().slice(0, 10);
+}
+
+// Напоминания: за 10 или 7 дней, за 3 дня и за 1 день до тоя, каждое в 9:00 по Астане.
+export function reminderSchedule(event, utcOffset = '+05:00') {
+  const at = (n) => new Date(`${daysBefore(event.event_date, n)}T${REMINDER_HOUR}:00${utcOffset}`);
   return [
-    { kind: 'reminder_first', dueAt: new Date(start - event.first_reminder_days * day) },
-    { kind: 'reminder_3d', dueAt: new Date(start - 3 * day) },
-    { kind: 'reminder_day', dueAt: new Date(start - 5 * 3600 * 1000) },
+    { kind: 'reminder_first', dueAt: at(event.first_reminder_days) },
+    { kind: 'reminder_3d', dueAt: at(3) },
+    { kind: 'reminder_1d', dueAt: at(1) },
   ];
 }
+
+// Кому напоминать: ответившим «Приду» и тем, кто ещё не ответил.
+const REMIND_RSVP = ['pending', 'yes'];
 
 export function createMessaging({ pool, config, whatsapp, log, notify }) {
   const wa = config.whatsapp;
@@ -31,7 +41,7 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
     return rowCount;
   }
 
-  // Создаёт напоминания только тем, кто не ответил и не отказался от сообщений.
+  // Создаёт напоминания тем, кто ответил «Приду» или ещё не ответил, и не отказался от сообщений.
   // Если сервер простаивал и наступило несколько сроков, отправится только последнее.
   async function scheduleReminders(now = new Date()) {
     const { rows: events } = await pool.query(
@@ -40,16 +50,16 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
     );
     let created = 0;
     for (const event of events) {
-      const due = reminderSchedule(event).filter((r) => r.dueAt <= now).pop();
+      const due = reminderSchedule(event, config.utcOffset).filter((r) => r.dueAt <= now).pop();
       if (!due) continue;
       const { rowCount } = await pool.query(
         `INSERT INTO messages (event_id, guest_id, kind, template)
          SELECT g.event_id, g.id, $2, 'toytime_reminder' FROM guests g
          JOIN messages inv ON inv.guest_id = g.id AND inv.kind = 'invite' AND inv.status IN ('sent', 'delivered', 'read')
-         WHERE g.event_id = $1 AND g.rsvp = 'pending' AND inv.created_at < $3
+         WHERE g.event_id = $1 AND g.rsvp = ANY($5) AND inv.created_at < $3
            AND NOT ${optOutSql.replace('$SECRET', '$4')}
          ON CONFLICT (guest_id, kind) DO NOTHING`,
-        [event.id, due.kind, due.dueAt, config.linkSecret],
+        [event.id, due.kind, due.dueAt, config.linkSecret, REMIND_RSVP],
       );
       created += rowCount;
     }
@@ -76,22 +86,29 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
 
   async function sendOne(message) {
     const { rows } = await pool.query(
-      `SELECT g.*, e.title, e.event_date, e.event_time, e.address, e.invitation_text, e.host_name, e.reminders_enabled, e.payment_status, e.organizer_id,
-              ${optOutSql.replace('$SECRET', '$2')} AS opted_out
-       FROM guests g JOIN events e ON e.id = g.event_id WHERE g.id = $1`,
+      `SELECT g.*, e.title, e.event_date, e.event_time, e.address, e.invitation_text, e.host_name, e.host_phone, e.lang,
+              e.reminders_enabled, e.payment_status, e.organizer_id,
+              ${optOutSql.replace('$SECRET', '$2')} AS opted_out,
+              em.mime AS media_mime, em.updated_at AS media_updated_at
+       FROM guests g JOIN events e ON e.id = g.event_id LEFT JOIN event_media em ON em.event_id = e.id WHERE g.id = $1`,
       [message.guest_id, config.linkSecret],
     );
     const row = rows[0];
     if (!row) return finish(message.id, { status: 'skipped', last_error: 'Гость удалён' });
     if (row.payment_status !== 'paid') return finish(message.id, { status: 'skipped', last_error: 'Мероприятие не оплачено' });
     if (row.opted_out) return finish(message.id, { status: 'skipped', last_error: 'Гость отказался от сообщений' });
-    if (message.kind !== 'invite' && row.rsvp !== 'pending') return finish(message.id, { status: 'skipped', last_error: 'Гость уже ответил' });
+    if (message.kind !== 'invite' && !REMIND_RSVP.includes(row.rsvp)) return finish(message.id, { status: 'skipped', last_error: 'Гость ответил «Не смогу»' });
     if (message.kind !== 'invite' && !row.reminders_enabled) return finish(message.id, { status: 'skipped', last_error: 'Напоминания выключены' });
 
-    const payload = buildTemplateMessage(message.kind, { guest: row, event: row, token: guestToken(config.linkSecret, row.id) });
+    // Фото или видео приглашения уходит каждому гостю вместе с приглашением, в том числе добавленным позже.
+    const media = row.media_mime ? {
+      type: row.media_mime.startsWith('video/') ? 'video' : 'image',
+      link: `${config.publicUrl}/media/${mediaToken(config.linkSecret, row.event_id, row.media_updated_at)}`,
+    } : null;
+    const payload = buildTemplateMessage(message.kind, { guest: row, event: row, token: guestToken(config.linkSecret, row.id), media });
     try {
       const { providerMessageId } = await whatsapp.sendTemplate({ to: row.phone, ...payload });
-      await finish(message.id, { status: 'sent', provider_message_id: providerMessageId, last_error: null });
+      await finish(message.id, { status: 'sent', template: payload.template, provider_message_id: providerMessageId, last_error: null });
       await log.info('whatsapp', whatsapp.testMode, `Отправлено ${message.kind} гостю ${row.id}`, { messageId: message.id, providerMessageId });
     } catch (err) {
       const details = { messageId: message.id, kind: message.kind, attempt: message.attempts, code: err.code };
