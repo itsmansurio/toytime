@@ -242,14 +242,29 @@ export function testCheckoutPage({ payment, event }) {
     </section>`);
 }
 
-export function outboxPage(outbox) {
+export function outboxPage(outbox, { events = [], token = '', flash } = {}) {
   const items = outbox.slice().reverse().map((m) => `
     <div class="card" style="margin:0 0 12px"><div class="meta">${h(new Date(m.sentAt).toLocaleString('ru-RU'))} → ${h(m.to)} · шаблон ${h(m.template)}</div>
     <div class="preview"><div class="msg">${h(m.preview).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>')}</div></div></div>`).join('');
+  const kinds = (e) => [['reminder_first', `За ${e.first_reminder_days} дней`], ['reminder_3d', 'За 3 дня'], ['reminder_1d', 'За 1 день']];
+  const reminders = events.length ? `
+      <div class="card" style="margin:0 0 16px">
+        <h1>Тест напоминаний</h1>
+        <p class="meta">Обычно напоминание уходит в 9:00 по Астане в нужный день. Здесь его можно отправить сразу, по тем же правилам: гостям, ответившим «Приду», и тем, кто ещё не ответил. Каждое напоминание уходит гостю один раз.</p>
+        ${flash !== undefined ? `<div class="banner" style="margin:0 0 12px">${icon('check')} Отправлено напоминаний: ${h(flash)}. Новые сообщения — ниже.</div>` : ''}
+        ${events.map((e) => `
+          <div style="margin-top:12px"><b>${h(e.title)}</b> <span class="meta">· ${h(e.event_date)}${e.reminders_enabled ? '' : ' · напоминания выключены'}</span>
+          <div class="chips" style="margin-top:8px">${kinds(e).map(([k, label]) => `
+            <form method="post" action="/test/reminders?token=${encodeURIComponent(token)}" style="display:inline">
+              <input type="hidden" name="event_id" value="${h(e.id)}"><input type="hidden" name="kind" value="${k}">
+              <button class="chip" style="border:0"${(e.sent_kinds ?? []).includes(k) ? ' disabled title="Уже отправлено"' : ''}>${icon('plus', 14)} ${h(label)}${(e.sent_kinds ?? []).includes(k) ? ' ✓' : ''}</button>
+            </form>`).join('')}</div></div>`).join('')}
+      </div>` : '';
   return layout('Тестовые сообщения WhatsApp', `
     ${hero({ tag: 'ЭМУЛЯТОР', title: 'Тестовые сообщения WhatsApp' })}
     <div class="plain">
       <div class="banner" style="margin:0 0 16px">${icon('flask')} Эмулятор WhatsApp: эти сообщения никуда не отправлялись. Ссылки в них — настоящие ссылки гостей.</div>
+      ${reminders}
       ${items || '<div class="card">Пока пусто. Отправьте приглашения из приложения.</div>'}
     </div>`);
 }

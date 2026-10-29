@@ -66,6 +66,22 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
     return created;
   }
 
+  // Тестовый режим: поставить напоминание сразу, не дожидаясь 9:00 нужного дня.
+  // Правила те же: только «Приду» и не ответившие, без отказавшихся, только после приглашения.
+  async function remindNow(eventId, kind) {
+    if (!['reminder_first', 'reminder_3d', 'reminder_1d'].includes(kind)) throw new Error('Неизвестное напоминание');
+    const { rowCount } = await pool.query(
+      `INSERT INTO messages (event_id, guest_id, kind, template)
+       SELECT g.event_id, g.id, $2, 'toytime_reminder' FROM guests g
+       JOIN events e ON e.id = g.event_id AND e.payment_status = 'paid' AND e.reminders_enabled
+       JOIN messages inv ON inv.guest_id = g.id AND inv.kind = 'invite' AND inv.status IN ('sent', 'delivered', 'read')
+       WHERE g.event_id = $1 AND g.rsvp = ANY($4) AND NOT ${optOutSql.replace('$SECRET', '$3')}
+       ON CONFLICT (guest_id, kind) DO NOTHING`,
+      [eventId, kind, config.linkSecret, REMIND_RSVP],
+    );
+    return rowCount;
+  }
+
   async function claimBatch(limit) {
     const { rows } = await pool.query(
       `UPDATE messages SET status = 'sending', locked_at = now(), attempts = attempts + 1, updated_at = now()
@@ -207,5 +223,5 @@ export function createMessaging({ pool, config, whatsapp, log, notify }) {
     );
   }
 
-  return { enqueueInvites, scheduleReminders, processQueue, recoverStale, handleWebhook, optOut, firstSeen };
+  return { enqueueInvites, scheduleReminders, remindNow, processQueue, recoverStale, handleWebhook, optOut, firstSeen };
 }

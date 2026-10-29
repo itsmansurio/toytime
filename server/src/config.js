@@ -17,6 +17,7 @@ export function loadConfig(overrides = {}) {
     corsOrigin: env.CORS_ORIGIN || '',
     adminToken: env.ADMIN_TOKEN || 'dev-admin',
     priceKzt: 1000,
+    sessionsPerMinute: 20, // регистраций с одного IP в минуту
     utcOffset: '+05:00', // Казахстан, единый часовой пояс с 2024 года
     consentVersion: '2026-10',
     whatsapp: {

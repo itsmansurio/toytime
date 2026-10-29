@@ -501,3 +501,27 @@ test('приглашение на английском: шаблон, дата �
   assert.match(page.text, /Dear Daniyar!/);
   assert.match(page.text, /Sunday/);
 });
+
+test('тестовый режим: напоминание можно отправить сразу со страницы эмулятора', async () => {
+  const token = await newOrganizer(env.api);
+  const event = await newEvent(env.api, token, { title: 'Тест напоминаний' });
+  await env.api.post(`/api/events/${event.id}/guests`).set(auth(token)).send({ guests: [
+    { name: 'Придёт', phone: '+77081111111' }, { name: 'Молчит', phone: '+77082222222' }, { name: 'Не придёт', phone: '+77083333333' },
+  ] });
+  await payEvent(env.api, token, event.id);
+  await env.api.post(`/api/events/${event.id}/send`).set(auth(token));
+  while (await env.ctx.messaging.processQueue(500));
+  const guests = Object.fromEntries((await env.api.get(`/api/events/${event.id}/guests`).set(auth(token))).body.map((g) => [g.name, g]));
+  await env.api.post(`/r/${guestToken(env.config.linkSecret, guests['Придёт'].id)}`).type('form').send({ answer: 'yes' });
+  await env.api.post(`/r/${guestToken(env.config.linkSecret, guests['Не придёт'].id)}`).type('form').send({ answer: 'no' });
+
+  assert.equal((await env.api.post('/test/reminders').type('form').send({ event_id: event.id, kind: 'reminder_1d' })).status, 401);
+  const page = await env.api.get('/test/whatsapp?token=dev-admin');
+  assert.match(page.text, /Тест напоминаний/);
+  const before = env.ctx.whatsapp.outbox.length;
+  const res = await env.api.post('/test/reminders?token=dev-admin').type('form').send({ event_id: event.id, kind: 'reminder_1d' });
+  assert.equal(res.status, 303);
+  assert.match(res.headers.location, /done=2/);
+  const sent = env.ctx.whatsapp.outbox.slice(before).map((m) => m.to).sort();
+  assert.deepEqual(sent, ['+77081111111', '+77082222222']);
+});

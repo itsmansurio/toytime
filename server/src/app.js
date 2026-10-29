@@ -129,7 +129,7 @@ export function createApp(ctx) {
   });
 
   // Регистрация устройства. Без согласия на обработку персональных данных — нельзя.
-  app.post('/api/session', rateLimit({ windowMs: 60_000, max: 20 }), asyncRoute(async (req, res) => {
+  app.post('/api/session', rateLimit({ windowMs: 60_000, max: config.sessionsPerMinute }), asyncRoute(async (req, res) => {
     if (req.body?.consent !== true) throw new HttpError(400, 'Нужно согласие на обработку персональных данных');
     const token = randomToken();
     const { rows } = await pool.query(
@@ -579,7 +579,19 @@ export function createApp(ctx) {
   }
 
   if (whatsapp.testMode) {
-    app.get('/test/whatsapp', adminAuth, (req, res) => res.type('html').send(outboxPage(whatsapp.outbox)));
+    // Список мероприятий для ручной проверки напоминаний.
+    const testEvents = async () => (await pool.query(
+      `SELECT e.id, e.title, e.event_date, e.first_reminder_days, e.reminders_enabled,
+         (SELECT array_agg(DISTINCT m.kind) FROM messages m WHERE m.event_id = e.id AND m.kind <> 'invite') AS sent_kinds
+       FROM events e WHERE e.payment_status = 'paid' AND e.invites_sent_at IS NOT NULL ORDER BY e.created_at DESC LIMIT 20`)).rows;
+    app.get('/test/whatsapp', adminAuth, asyncRoute(async (req, res) => {
+      res.type('html').send(outboxPage(whatsapp.outbox, { events: await testEvents(), token: req.query.token, flash: req.query.done }));
+    }));
+    app.post('/test/reminders', adminAuth, asyncRoute(async (req, res) => {
+      const n = await messaging.remindNow(String(req.body.event_id), String(req.body.kind));
+      while (await messaging.processQueue(100));
+      res.redirect(303, `/test/whatsapp?token=${encodeURIComponent(req.query.token ?? '')}&done=${n}`);
+    }));
   }
 
   // Веб-версия приложения (собирается из mobile/ в server/public) для показа по ссылке.

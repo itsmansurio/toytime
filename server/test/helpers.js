@@ -8,7 +8,7 @@ process.env.NODE_ENV = 'test';
 const TEST_DB = process.env.TEST_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/toytime_test';
 
 export async function setup() {
-  const config = loadConfig({ databaseUrl: TEST_DB, publicUrl: 'http://test.local' });
+  const config = loadConfig({ databaseUrl: TEST_DB, publicUrl: 'http://test.local', sessionsPerMinute: 1000 });
   const pool = createPool(TEST_DB);
   await migrate(pool);
   await pool.query('TRUNCATE organizers, opt_outs, webhook_events, integration_logs RESTART IDENTITY CASCADE');
