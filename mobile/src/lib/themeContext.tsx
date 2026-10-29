@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(currentLang);
   useEffect(() => {
     storage.get(KEY).then((v) => { if (v === 'light' || v === 'dark' || v === 'system') setPrefState(v); }).catch(() => {});
-    storage.get(LANG_KEY).then((v) => { if (v === 'ru' || v === 'kk') setLangState(v); }).catch(() => {});
+    storage.get(LANG_KEY).then((v) => { if (v === 'ru' || v === 'kk' || v === 'en') setLangState(v); }).catch(() => {});
   }, []);
   if (currentLang !== lang) applyLang(lang); // до отрисовки, чтобы все тексты взяли новый язык
   const mode: ThemeMode = pref === 'system' ? (system === 'dark' ? 'dark' : 'light') : pref;

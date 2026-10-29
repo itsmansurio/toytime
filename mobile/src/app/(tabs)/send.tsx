@@ -19,6 +19,11 @@ import { t } from '../../lib/i18n';
 // Язык — язык приглашения мероприятия, а не язык приложения.
 function previewText(e: EventItem, guestName: string) {
   const phone = e.hostPhone ? formatPhone(e.hostPhone) : null;
+  if (e.lang === 'en') {
+    return `Hello, ${guestName}!\n\n${e.hostName || 'The host'} invites you to “${e.title}”.\n\n` +
+      `📅 Date: ${formatDate(e.eventDate, 'en')}\n🕒 Time: ${e.eventTime}\n📍 Venue: ${e.address}\n📞 Host phone: ${phone ?? 'ask the host'}\n\n` +
+      `${e.invitationText}\n\nPlease let us know with the button below whether you can come. To stop receiving messages, reply STOP.\n\n[Reply]`;
+  }
   if (e.lang === 'kk') {
     return `Ассалаумағалейкум, ${guestName}!\n\n${e.hostName || 'Той иесі'} сізді мерекеге шақырады: «${e.title}».\n\n` +
       `📅 Күні: ${formatDate(e.eventDate, 'kk')}\n🕒 Уақыты: ${e.eventTime}\n📍 Мекенжайы: ${e.address}\n📞 Той иесінің телефоны: ${phone ?? 'той иесінен сұраңыз'}\n\n` +

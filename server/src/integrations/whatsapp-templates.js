@@ -1,6 +1,6 @@
 // Шаблоны сообщений WhatsApp. До отправки в реальном режиме каждый шаблон
 // нужно создать и получить одобрение в WhatsApp Manager с теми же именами,
-// языками (ru и kk) и порядком переменных. Тексты ниже — то, что подаётся на одобрение.
+// языками (ru, kk и en) и порядком переменных. Тексты ниже — то, что подаётся на одобрение.
 //
 // Приглашение существует в трёх вариантах, потому что тип шапки (текст, фото, видео)
 // задаётся в самом шаблоне: toytime_invite, toytime_invite_image, toytime_invite_video.
@@ -8,6 +8,10 @@
 import { formatDate } from '../util.js';
 
 const INVITE_BODY = {
+  en:
+    'Hello, {{1}}!\n\n{{2}} invites you to “{{3}}”.\n\n' +
+    '📅 Date: {{4}}\n🕒 Time: {{5}}\n📍 Venue: {{6}}\n📞 Host phone: {{7}}\n\n{{8}}\n\n' +
+    'Please let us know with the button below whether you can come. To stop receiving messages, reply STOP.',
   ru:
     'Ассаламу алейкум, {{1}}!\n\n{{2}} приглашает вас на мероприятие «{{3}}».\n\n' +
     '📅 Дата: {{4}}\n🕒 Время: {{5}}\n📍 Место: {{6}}\n📞 Телефон организатора: {{7}}\n\n{{8}}\n\n' +
@@ -19,6 +23,9 @@ const INVITE_BODY = {
 };
 
 const REMINDER_BODY = {
+  en:
+    '{{1}}, a reminder about “{{2}}” on {{3}} at {{4}}, venue: {{5}}.\n\n' +
+    'You haven’t replied yet. Please let us know with the button below whether you can come. To stop receiving messages, reply STOP.',
   ru:
     '{{1}}, напоминаем о мероприятии «{{2}}» {{3}} в {{4}}, место: {{5}}.\n\n' +
     'Вы ещё не ответили, придёте ли. Ответить можно по кнопке ниже. Чтобы не получать сообщения, напишите СТОП.',
@@ -28,6 +35,9 @@ const REMINDER_BODY = {
 };
 
 const REMINDER_YES_BODY = {
+  en:
+    '{{1}}, a reminder: we look forward to seeing you at “{{2}}” on {{3}} at {{4}}, venue: {{5}}.\n\n' +
+    'You replied “Coming”. If your plans change, update your reply with the button below. To stop receiving messages, reply STOP.',
   ru:
     '{{1}}, напоминаем: ждём вас на мероприятии «{{2}}» {{3}} в {{4}}, место: {{5}}.\n\n' +
     'Вы ответили «Приду». Если планы изменились, поменяйте ответ по кнопке ниже. Чтобы не получать сообщения, напишите СТОП.',
@@ -37,12 +47,13 @@ const REMINDER_YES_BODY = {
 };
 
 const BUTTON = {
+  en: { type: 'URL', text: 'Reply', url: '{PUBLIC_URL}/r/{{1}}' },
   ru: { type: 'URL', text: 'Ответить', url: '{PUBLIC_URL}/r/{{1}}' },
   kk: { type: 'URL', text: 'Жауап беру', url: '{PUBLIC_URL}/r/{{1}}' },
 };
 
-const DEFAULT_HOST = { ru: 'Организатор праздника', kk: 'Той иесі' };
-const NO_PHONE = { ru: 'уточняйте у организатора', kk: 'той иесінен сұраңыз' };
+const DEFAULT_HOST = { ru: 'Организатор праздника', kk: 'Той иесі', en: 'The host' };
+const NO_PHONE = { ru: 'уточняйте у организатора', kk: 'той иесінен сұраңыз', en: 'ask the host' };
 
 export const TEMPLATES = {
   toytime_invite: { category: 'UTILITY', header: null, body: INVITE_BODY, button: BUTTON },
@@ -67,7 +78,7 @@ export function formatPhone(phone) {
 
 // media: { type: 'image' | 'video', link } — фото или видео приглашения, если организатор его добавил.
 export function buildTemplateMessage(kind, { guest, event, token, media }) {
-  const lang = event.lang === 'kk' ? 'kk' : 'ru';
+  const lang = ['ru', 'kk', 'en'].includes(event.lang) ? event.lang : 'ru';
   let template;
   if (kind === 'invite') template = media ? `toytime_invite_${media.type}` : 'toytime_invite';
   else template = guest.rsvp === 'yes' ? 'toytime_reminder_yes' : 'toytime_reminder';
@@ -87,7 +98,7 @@ export function buildTemplateMessage(kind, { guest, event, token, media }) {
 // Текст для предпросмотра в эмуляторе: подставляет переменные в шаблон.
 export function renderPreview(message, publicUrl) {
   const tpl = TEMPLATES[message.template];
-  const lang = message.language === 'kk' ? 'kk' : 'ru';
+  const lang = ['ru', 'kk', 'en'].includes(message.language) ? message.language : 'ru';
   const body = tpl.body[lang].replace(/\{\{(\d+)\}\}/g, (_, n) => message.bodyParams[Number(n) - 1] ?? '');
   const head = message.header ? `[${message.header.type === 'video' ? 'Видео' : 'Фото'}] ${message.header.link}\n\n` : '';
   return `${head}${body}\n\n[${tpl.button[lang].text}] ${publicUrl}/r/${message.buttonUrlSuffix}`;

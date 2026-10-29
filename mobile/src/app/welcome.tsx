@@ -8,7 +8,8 @@ import { colors, radius, themed } from '../lib/theme';
 import { ErrorText, Ionicons, T, type IconName } from '../components/ui';
 import { Brand } from '../components/TopHeader';
 import { useTheme } from '../lib/themeContext';
-import { LANGS, t } from '../lib/i18n';
+import { t } from '../lib/i18n';
+import { LangSwitch } from '../components/LangSwitch';
 
 const FEATURES = (): [IconName, string, string][] => [
   ['create-outline', t('Мероприятие за 2 минуты'), t('Название, дата, место и текст приглашения')],
@@ -17,7 +18,7 @@ const FEATURES = (): [IconName, string, string][] => [
 ];
 
 export default function Welcome() {
-  const { lang, setLang } = useTheme();
+  useTheme();
   const { signIn } = useSession();
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,14 +42,7 @@ export default function Welcome() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.brandRow}>
             <Brand size={26} />
-            <View style={styles.langs}>
-              {LANGS.map((l) => (
-                <Pressable key={l.value} onPress={() => setLang(l.value)} style={[styles.lang, lang === l.value && styles.langOn]}
-                  accessibilityRole="radio" accessibilityState={{ checked: lang === l.value }}>
-                  <T weight="bold" size={12} color={lang === l.value ? colors.onLime : '#E3EEE8'}>{l.label}</T>
-                </Pressable>
-              ))}
-            </View>
+            <LangSwitch />
           </View>
           <T weight="extrabold" size={32} color="#fff" style={styles.headline}>{t('Той начинается\nс хорошей\nорганизации.')}</T>
           <T size={14} color="#C6D8D0" style={{ marginBottom: 28 }}>{t('Приглашения, ответы гостей и напоминания — в одном месте.')}</T>
@@ -104,9 +98,6 @@ export default function Welcome() {
 const styles = themed(() => StyleSheet.create({
   content: { padding: 24, paddingTop: 36, flexGrow: 1 },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  langs: { flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: '#FFFFFF44', borderRadius: 20, padding: 3 },
-  lang: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16 },
-  langOn: { backgroundColor: colors.lime },
   headline: { lineHeight: 37, letterSpacing: -0.8, marginTop: 40, marginBottom: 10 },
   feature: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: radius.md, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   featureIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' },

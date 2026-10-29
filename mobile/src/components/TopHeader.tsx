@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../lib/api';
@@ -9,6 +9,7 @@ import { useSession } from '../lib/session';
 import { useRefresh } from '../lib/useRefresh';
 import { Ionicons, T, type IconName } from './ui';
 import { useCommandPalette } from './CommandPalette';
+import { LangSwitch } from './LangSwitch';
 import { t } from '../lib/i18n';
 
 // Шапка из макета заказчика: тёмно-зелёная, со скруглением снизу, логотип ToiTime.
@@ -34,7 +35,6 @@ export function TopHeader({ title: titleProp, subtitle: subtitleProp, children }
   title?: string; subtitle?: string; children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { mode, toggle } = useTheme();
   const title = titleProp ?? t('Той начинается\nс хорошей организации.');
   const subtitle = subtitleProp ?? t('Приглашения, ответы гостей и напоминания — в одном месте.');
@@ -44,21 +44,19 @@ export function TopHeader({ title: titleProp, subtitle: subtitleProp, children }
   const { data: notes } = useRefresh(api.notifications, 15000);
   const unread = (notes ?? []).filter((n) => !n.read).length;
   const tag = <View style={styles.tag}><T weight="semibold" size={11} color="#E3EEE8">{demo ? t('БЕЗ РЕКЛАМЫ · ДЕМО') : t('БЕЗ РЕКЛАМЫ')}</T></View>;
-  const wide = width >= 470;
   return (
     <View style={[styles.top, { paddingTop: insets.top + 20 }]}>
       <View style={styles.line}>
         <Brand />
         <View style={styles.right}>
-          {wide ? tag : null}
           <HeaderIcon name="search" label={t('Поиск (Ctrl+K)')} onPress={palette.open} />
           <HeaderIcon name={mode === 'dark' ? 'sun' : 'moon'} label={mode === 'dark' ? t('Светлая тема') : t('Тёмная тема')} onPress={toggle} />
           <HeaderIcon name="notifications-outline" label={t('Уведомления')} onPress={() => router.push('/notifications')} badge={unread} />
           <HeaderIcon name="settings-outline" label={t('Настройки')} onPress={() => router.push('/settings')} />
         </View>
       </View>
-      {!wide ? <View style={{ flexDirection: 'row', marginTop: 16 }}>{tag}</View> : null}
-      <T weight="extrabold" size={25} color="#FFFFFF" style={[styles.title, !wide && { marginTop: 14 }]}>{title}</T>
+      <View style={styles.tagRow}>{tag}<LangSwitch /></View>
+      <T weight="extrabold" size={25} color="#FFFFFF" style={[styles.title, { marginTop: 14 }]}>{title}</T>
       <T size={13} color={colors.headerSub}>{subtitle}</T>
       {children}
     </View>
@@ -69,6 +67,7 @@ const styles = themed(() => StyleSheet.create({
   top: { backgroundColor: colors.header, paddingHorizontal: 19, paddingBottom: 25, borderBottomLeftRadius: radius.xl + 1, borderBottomRightRadius: radius.xl + 1 },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   right: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tagRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 16 },
   tag: { borderWidth: 1, borderColor: '#FFFFFF44', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5 },
   icon: { width: 32, height: 32, borderRadius: 11, backgroundColor: '#FFFFFF1A', alignItems: 'center', justifyContent: 'center' },
   badge: { position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, paddingHorizontal: 3, borderRadius: 8, backgroundColor: '#D8F27B', alignItems: 'center', justifyContent: 'center' },

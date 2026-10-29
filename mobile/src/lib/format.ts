@@ -2,13 +2,15 @@ import { lang as appLang, t, type Lang } from './i18n';
 
 const MONTHS = {
   ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   kk: ['қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан'],
 };
 
-// «28 ноября 2026» / «2026 ж. 28 қараша». Язык по умолчанию — язык приложения.
+// «28 ноября 2026» / «2026 ж. 28 қараша» / «28 November 2026». Язык по умолчанию — язык приложения.
 export function formatDate(iso: string, lang: Lang = appLang): string {
   const [y, m, d] = iso.split('-').map(Number);
-  return lang === 'kk' ? `${y} ж. ${d} ${MONTHS.kk[m - 1]}` : `${d} ${MONTHS.ru[m - 1]} ${y}`;
+  if (lang === 'kk') return `${y} ж. ${d} ${MONTHS.kk[m - 1]}`;
+  return `${d} ${MONTHS[lang][m - 1]} ${y}`;
 }
 
 export function toIsoDate(date: Date): string {
@@ -47,6 +49,7 @@ export function astanaDate(d: Date): string {
 
 export function daysWord(n: number) {
   if (appLang === 'kk') return 'күн';
+  if (appLang === 'en') return n === 1 ? 'day' : 'days';
   const mod10 = n % 10, mod100 = n % 100;
   if (mod10 === 1 && mod100 !== 11) return 'день';
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня';
@@ -55,6 +58,7 @@ export function daysWord(n: number) {
 
 export function pluralGuests(n: number) {
   if (appLang === 'kk') return `${n} қонақ`;
+  if (appLang === 'en') return `${n} ${n === 1 ? 'guest' : 'guests'}`;
   const mod10 = n % 10, mod100 = n % 100;
   if (mod10 === 1 && mod100 !== 11) return `${n} гость`;
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} гостя`;

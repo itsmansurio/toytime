@@ -480,3 +480,24 @@ test('доп. ТЗ: телефон хозяина, фото/видео-приг�
   assert.equal((await env.api.delete(`/api/events/${event.id}/media`).set(auth(token))).status, 200);
   assert.equal((await env.api.get(`/api/events/${event.id}`).set(auth(token))).body.media, null);
 });
+
+test('приглашение на английском: шаблон, дата и страница гостя', async () => {
+  const token = await newOrganizer(env.api);
+  const event = await newEvent(env.api, token, { lang: 'en', host_name: 'The Yerlanovs', event_date: '2027-03-14' });
+  assert.equal(event.lang, 'en');
+  assert.equal((await env.api.patch(`/api/events/${event.id}`).set(auth(token)).send({ lang: 'de' })).status, 400);
+  await env.api.post(`/api/events/${event.id}/guests`).set(auth(token)).send({ guests: [{ name: 'Daniyar', phone: '+77071111111' }] });
+  await payEvent(env.api, token, event.id);
+  await env.api.post(`/api/events/${event.id}/send`).set(auth(token));
+  const before = env.ctx.whatsapp.outbox.length;
+  while (await env.ctx.messaging.processQueue(500));
+  const [msg] = env.ctx.whatsapp.outbox.slice(before).filter((m) => m.to === '+77071111111');
+  assert.equal(msg.language, 'en');
+  assert.match(msg.preview, /The Yerlanovs invites you to “Свадебный той”/);
+  assert.match(msg.preview, /Date: 14 March 2027/);
+  const guests = (await env.api.get(`/api/events/${event.id}/guests`).set(auth(token))).body;
+  const page = await env.api.get(`/r/${guestToken(env.config.linkSecret, guests[0].id)}`);
+  assert.match(page.text, /<html lang="en">/);
+  assert.match(page.text, /Dear Daniyar!/);
+  assert.match(page.text, /Sunday/);
+});

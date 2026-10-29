@@ -66,12 +66,15 @@ export function escapeHtml(value) {
 
 const MONTHS = {
   ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   kk: ['қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан'],
 };
-// «28 ноября 2026 года» / «2026 жылғы 28 қараша».
+// «28 ноября 2026 года» / «2026 жылғы 28 қараша» / «28 November 2026».
 export function formatDate(isoDate, lang = 'ru') {
   const [y, m, d] = isoDate.split('-').map(Number);
-  return lang === 'kk' ? `${y} жылғы ${d} ${MONTHS.kk[m - 1]}` : `${d} ${MONTHS.ru[m - 1]} ${y} года`;
+  if (lang === 'kk') return `${y} жылғы ${d} ${MONTHS.kk[m - 1]}`;
+  if (lang === 'en') return `${d} ${MONTHS.en[m - 1]} ${y}`;
+  return `${d} ${MONTHS.ru[m - 1]} ${y} года`;
 }
 export const formatDateRu = (isoDate) => formatDate(isoDate, 'ru');
 

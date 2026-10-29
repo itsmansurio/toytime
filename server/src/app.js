@@ -65,7 +65,7 @@ function validateEvent(body, config, { partial = false } = {}) {
     out.host_phone = phone;
   }
   if (body.lang !== undefined) {
-    if (!['ru', 'kk'].includes(body.lang)) throw new HttpError(400, 'Язык приглашения: ru или kk');
+    if (!['ru', 'kk', 'en'].includes(body.lang)) throw new HttpError(400, 'Язык приглашения: ru, kk или en');
     out.lang = body.lang;
   }
   if (body.reminders_enabled !== undefined) out.reminders_enabled = Boolean(body.reminders_enabled);

@@ -17,6 +17,7 @@ import { useToast } from '../../components/Toast';
 const DEFAULT_TEXT: Record<InviteLang, string> = {
   ru: 'Будем рады разделить с вами наш особенный день!',
   kk: 'Қуанышымызбен бөлісуге шақырамыз!',
+  en: 'We would be delighted to share our special day with you!',
 };
 const PRESETS = ['Свадебный той', 'Сүндет той', 'Тұсау кесер', 'Қыз ұзату', 'День рождения', 'Юбилей'];
 

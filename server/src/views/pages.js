@@ -3,11 +3,22 @@ import { formatPhone } from '../integrations/whatsapp-templates.js';
 
 const WEEKDAYS = {
   ru: ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
   kk: ['жексенбі', 'дүйсенбі', 'сейсенбі', 'сәрсенбі', 'бейсенбі', 'жұма', 'сенбі'],
 };
 
 // Тексты страницы гостя на языке приглашения.
 const GUEST_TEXT = {
+  en: {
+    tag: 'INVITATION', invites: (n) => `${n} invites you`, invitedDefault: 'You are invited to a celebration',
+    start: 'start', place: 'venue', host: 'host phone', call: 'Call', calendar: 'Add to calendar', maps: 'Google Maps',
+    yesTitle: 'You’re coming — thank you!', yesText: 'The host can already see your reply. See you at the celebration!',
+    noTitle: 'Sorry you can’t make it', noText: 'Thanks for letting us know — the host will see your reply.',
+    change: 'Plans changed? You can update your reply:', question: 'Will you come?', yes: 'Coming', no: 'Can’t come',
+    noApp: 'No app to install.', optedOut: 'You’ve opted out of ToiTime messages — no more reminders.',
+    optOut: 'Don’t send me reminders', privacy: 'Privacy', noAds: 'ToiTime — no ads', video: 'Video invitation', photo: 'Photo invitation',
+    greet: 'Dear',
+  },
   ru: {
     tag: 'ПРИГЛАШЕНИЕ', invites: (n) => `${n} приглашает вас`, invitedDefault: 'Вас приглашают на праздник',
     start: 'начало', place: 'место проведения', host: 'телефон хозяина', call: 'Позвонить', calendar: 'В календарь', maps: 'Google Карты',
@@ -144,7 +155,7 @@ function weekday(isoDate, lang = 'ru') {
 }
 
 export function rsvpPage({ guest, event, token, optedOut, flash }) {
-  const lang = event.lang === 'kk' ? 'kk' : 'ru';
+  const lang = ['ru', 'kk', 'en'].includes(event.lang) ? event.lang : 'ru';
   const t = GUEST_TEXT[lang];
   const date = formatDate(event.event_date, lang);
   const answered = guest.rsvp !== 'pending';
@@ -170,7 +181,7 @@ export function rsvpPage({ guest, event, token, optedOut, flash }) {
     ${mediaBlock}
 
     <section class="card">
-      <p class="greet">Құрметті ${h(guest.name)}!</p>
+      <p class="greet">${t.greet ?? 'Құрметті'} ${h(guest.name)}!</p>
       <p class="invite">${h(event.invitation_text)}</p>
       <div class="facts">
         <div class="fact"><div class="ic">${icon('calendar', 20)}</div><div><b>${h(date)}</b><span>${h(weekday(event.event_date, lang))}</span></div></div>

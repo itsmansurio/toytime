@@ -10,7 +10,7 @@ export const API_URL: string =
 export type Rsvp = 'pending' | 'yes' | 'no';
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid';
 
-export type InviteLang = 'ru' | 'kk';
+export type InviteLang = 'ru' | 'kk' | 'en';
 export interface EventMedia { type: 'image' | 'video'; mime: string; size: number; url: string }
 export interface EventStats { total: number; yes: number; no: number; pending: number }
 export interface EventItem {
